@@ -17,7 +17,12 @@ router
       req.body.address = checkIsProperString(req.body.address, "address");
       req.body.contact = checkIsProperString(req.body.contact, "contact");
     } catch (error) {
-      return res.status(404).send(error.message);
+            const result = {
+        patientAdded: null,
+        message: error.message,
+        success: false,
+      };
+      return res.status(404).json(result);
     }
 
     try {
@@ -28,11 +33,21 @@ router
         req.body.address,
         req.body.contact
       );
-      return res.json(addPaitent);
+
+      const result = {
+        patientAdded: addPaitent,
+        message : "Patient added succesfully",
+        success : true
+      };
+      return res.json(result);
     } catch (error) {
-      return res.status(404).send(error.message);
+      const result = {
+        patientAdded: null,
+        message: error.message,
+        success: false,
+      };
+      return res.status(404).json(result);
     }
-    //return res.send("POST request to http://localhost:3000/paitents");
   })
   .delete(async (req, res) => {
     return res.send("DELETE request to http://localhost:3000/paitents");

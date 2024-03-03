@@ -25,6 +25,16 @@ const Navbar = () => {
               Patient Input
             </NavLink>
           </li>
+          <li className="nav-item">
+            <NavLink
+              activeClassName="active"
+              className="nav-link"
+              to="/register"
+              end
+            >
+              Register
+            </NavLink>
+          </li>
         </ul>
       </div>
     </nav>

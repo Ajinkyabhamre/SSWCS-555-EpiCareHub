@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { useState } from "react";
 import axios from "axios";
 import { TextField, Button, Typography } from "@mui/material";
@@ -75,7 +77,7 @@ const PatientInput = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = await validateForm();
-    if (data) {
+    if (data) 
       axios.post("http://localhost:3000/patients", data).then((res) => {
         setOpen(true);
         setFormData({

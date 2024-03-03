@@ -1,6 +1,9 @@
 import { Router } from "express";
 const router = Router();
 import { paitentsData } from "../data/index.js";
+import {
+  checkIsProperString, isDateValid
+} from '../data/helper.js';
 
 
 router
@@ -9,6 +12,17 @@ router
     return res.send("GET request to http://localhost:3000/paitents");
   })
   .post(async (req, res) => {
+
+    try{
+      req.body.firstName = checkIsProperString(req.body.firstName, 'firstName');
+      req.body.lastName = checkIsProperString(req.body.lastName, 'lastName');
+      req.body.DOB = checkIsProperString(req.body.DOB, 'date of birth');
+      req.body.DOB = isDateValid(req.body.DOB, "date of birth");
+      req.body.address = checkIsProperString(req.body.address, 'address');
+      req.body.contact = checkIsProperString(req.body.contact, 'contact');
+    }catch(error){
+      return res.status(404).send(error.message);
+    }
 
     try{
       console.log(req.body.firstName);
@@ -20,7 +34,7 @@ router
       
         return res.json(addPaitent);
     }catch (error){
-      return res.send(error.message);
+      return res.status(404).send(error.message);
     }
     //return res.send("POST request to http://localhost:3000/paitents");
   })

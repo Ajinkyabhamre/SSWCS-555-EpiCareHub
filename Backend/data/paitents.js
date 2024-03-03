@@ -1,8 +1,20 @@
 import { paitents } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
+import {
+    checkIsProperString, isDateValid, validateId
+} from './helper.js';
 
 const exportedMethods = {
+    
   async addPaitent(firstName, lastName, DOB, address, contact) {
+
+    firstName = checkIsProperString(firstName, "firstName");
+    lastName = checkIsProperString(lastName, "lastName");
+    DOB = checkIsProperString(DOB, "date of birth");
+    DOB = isDateValid(DOB, "date of birth");
+    address = checkIsProperString(address, "address");
+    contact = checkIsProperString(contact, "contact");
+
     let newPaitent = {
       firstName: firstName,
       lastName : lastName,
@@ -22,10 +34,11 @@ const exportedMethods = {
   },
 
   async getPaitentById(id) {
+    id = validateId(id, 'id');
     const paitentsCollection = await paitents();
-    const user = await paitentsCollection.findOne({_id: ObjectId.createFromHexString(id)});
-    if (!user) throw new Error ('Error: User not found');
-    return user;
+    const paitent = await paitentsCollection.findOne({_id: ObjectId.createFromHexString(id)});
+    if (!paitent) throw new Error("Error: Paitent not found");
+    return paitent;
   }
 };
 

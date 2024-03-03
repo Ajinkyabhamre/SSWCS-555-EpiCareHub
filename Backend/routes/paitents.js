@@ -21,7 +21,6 @@ router
     }
 
     try {
-      console.log(req.body.firstName);
       const addPaitent = await paitentsData.addPaitent(
         req.body.firstName,
         req.body.lastName,
@@ -29,7 +28,6 @@ router
         req.body.address,
         req.body.contact
       );
-
       return res.json(addPaitent);
     } catch (error) {
       return res.status(404).send(error.message);

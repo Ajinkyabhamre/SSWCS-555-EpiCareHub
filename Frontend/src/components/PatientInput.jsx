@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
+import { TextField, Button, Typography } from "@mui/material";
+import Snackbar from "@mui/material/Snackbar";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
 import moment from "moment";
 
 const PatientInput = () => {
@@ -11,6 +15,8 @@ const PatientInput = () => {
     contact: "",
   });
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("Successfully Added Patient");
+  const [open, setOpen] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,25 +64,40 @@ const PatientInput = () => {
     return data;
   };
 
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = await validateForm();
     if (data) {
       axios.post("http://localhost:3000/paitents", data).then((res) => {
-        console.log(res);
+        setOpen(true);
+        setFormData({
+          firstName: "",
+          lastName: "",
+          dob: "",
+          address: "",
+          contact: "",
+        });
       });
     }
   };
 
   return (
     <div className="page-container">
-      <h1>Patient Information Form</h1>
+      <Typography variant="h4">Patient Information Form</Typography>
       <form className="form-container" onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="firstName">First Name:</label>
-          <input
-            type="text"
+          <TextField
             id="firstName"
+            label="First Name"
+            type="text"
             name="firstName"
             value={formData.firstName}
             onChange={handleChange}
@@ -84,10 +105,10 @@ const PatientInput = () => {
           />
         </div>
         <div>
-          <label htmlFor="lastName">Last Name:</label>
-          <input
-            type="text"
+          <TextField
             id="lastName"
+            label="Last Name"
+            type="text"
             name="lastName"
             value={formData.lastName}
             onChange={handleChange}
@@ -95,22 +116,27 @@ const PatientInput = () => {
           />
         </div>
         <div>
-          <label htmlFor="dob">Date of Birth:</label>
-          <input
-            type="date"
+          <TextField
             id="dob"
+            label="Date of Birth"
+            type="date"
             name="dob"
             value={formData.dob}
             onChange={handleChange}
-            max={moment().format("YYYY-MM-DD")}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            inputProps={{
+              max: moment().format("YYYY-MM-DD"),
+            }}
             required
           />
         </div>
         <div>
-          <label htmlFor="address">Address:</label>
-          <input
-            type="text"
+          <TextField
             id="address"
+            label="Address"
+            type="text"
             name="address"
             value={formData.address}
             onChange={handleChange}
@@ -118,10 +144,10 @@ const PatientInput = () => {
           />
         </div>
         <div>
-          <label htmlFor="contact">Contact:</label>
-          <input
-            type="text"
+          <TextField
             id="contact"
+            label="Contact"
+            type="text"
             name="contact"
             value={formData.contact}
             onChange={handleChange}
@@ -129,8 +155,25 @@ const PatientInput = () => {
           />
         </div>
         <div className="todo-errors">{error && <span>{error}</span>}</div>
-        <button type="submit">Submit</button>
+        <Button type="submit">Submit</Button>
       </form>
+      <Snackbar
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        open={open}
+        autoHideDuration={3000}
+        onClose={handleClose}
+        message={message}
+        action={
+          <IconButton
+            size="small"
+            aria-label="close"
+            color="inherit"
+            onClick={handleClose}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        }
+      />
     </div>
   );
 };

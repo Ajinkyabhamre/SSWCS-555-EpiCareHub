@@ -2,23 +2,27 @@ import { NavLink } from "react-router-dom";
 
 const Navbar = () => {
   return (
-    <nav className="navbar navbar-light">
+    <nav className="navbar">
       <div className="container">
-        <NavLink activeClassName="active" className="navbar-brand" to="/" end>
-          EpiCareHub
-        </NavLink>
-        <ul className="nav navbar-nav pull-xs-right">
+        <div className="navbar-header">
+          <NavLink activeClassName="active" className="navbar-brand" to="/" end>
+            EpiCareHub
+          </NavLink>
+        </div>
+        <ul className="navbar-nav">
           <li className="nav-item">
             <NavLink activeClassName="active" className="nav-link" to="/" end>
               Home
             </NavLink>
+          </li>
+          <li className="nav-item">
             <NavLink
               activeClassName="active"
               className="nav-link"
               to="/pinput"
               end
             >
-              PatientInput
+              Patient Input
             </NavLink>
           </li>
         </ul>

@@ -2,6 +2,11 @@ import express from "express";
 const app = express();
 import configRoutesFunction from "./routes/index.js";
 
+import bodyParser from "body-parser";
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
 configRoutesFunction(app);
 
 app.listen(3000, () => {

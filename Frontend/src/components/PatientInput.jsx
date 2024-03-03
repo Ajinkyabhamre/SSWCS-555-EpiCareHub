@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useState } from "react";
-import axios from "axios";
 import { TextField, Button, Typography } from "@mui/material";
 import Snackbar from "@mui/material/Snackbar";
 import IconButton from "@mui/material/IconButton";
@@ -77,7 +75,7 @@ const PatientInput = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = await validateForm();
-    if (data) 
+    if (data)
       axios.post("http://localhost:3000/patients", data).then((res) => {
         setOpen(true);
         setFormData({
@@ -88,7 +86,6 @@ const PatientInput = () => {
           contact: "",
         });
       });
-    }
   };
 
   return (
@@ -179,4 +176,5 @@ const PatientInput = () => {
     </div>
   );
 };
+
 export default PatientInput;

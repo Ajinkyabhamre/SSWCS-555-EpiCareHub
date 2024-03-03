@@ -76,7 +76,7 @@ const PatientInput = () => {
     e.preventDefault();
     const data = await validateForm();
     if (data) {
-      axios.post("http://localhost:3000/paitents", data).then((res) => {
+      axios.post("http://localhost:3000/patients", data).then((res) => {
         setOpen(true);
         setFormData({
           firstName: "",

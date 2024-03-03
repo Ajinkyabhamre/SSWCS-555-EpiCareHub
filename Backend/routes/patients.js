@@ -1,6 +1,6 @@
 import { Router } from "express";
 const router = Router();
-import { paitentsData } from "../data/index.js";
+import { patientsData } from "../data/index.js";
 import { checkIsProperString, isDateValid } from "../data/helper.js";
 
 router
@@ -21,7 +21,7 @@ router
     }
 
     try {
-      const addPaitent = await paitentsData.addPaitent(
+      const addPaitent = await patientsData.addPaitent(
         req.body.firstName,
         req.body.lastName,
         req.body.dob,

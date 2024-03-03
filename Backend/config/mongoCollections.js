@@ -16,5 +16,5 @@ const getCollectionFn = (collection) => {
 };
 
 /* Now, you can list your collections here: */
-export const paitents = getCollectionFn("paitents");
+export const patients = getCollectionFn("patients");
 

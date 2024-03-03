@@ -1,5 +1,5 @@
 
-import paitentDataFunctions from "./paitents.js";
+import patientsDataFunctions from "./patients.js";
 
-export const paitentsData = paitentDataFunctions;
+export const patientsData = patientsDataFunctions;
 

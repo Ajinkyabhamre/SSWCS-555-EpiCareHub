@@ -1,4 +1,4 @@
-import { paitents } from "../config/mongoCollections.js";
+import { patients } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 import { checkIsProperString, isDateValid, validateId } from "./helper.js";
 
@@ -19,9 +19,9 @@ const exportedMethods = {
       contact: contact,
     };
 
-    const paitentsCollection = await paitents();
+    const patientsCollection = await patients();
 
-    const newInsertInformation = await paitentsCollection.insertOne(newPaitent);
+    const newInsertInformation = await patientsCollection.insertOne(newPaitent);
 
     if (!newInsertInformation.insertedId)
       throw new Error("Error: Insert failed!");
@@ -32,8 +32,8 @@ const exportedMethods = {
 
   async getPaitentById(id) {
     id = validateId(id, "id");
-    const paitentsCollection = await paitents();
-    const paitent = await paitentsCollection.findOne({
+    const patientsCollection = await patients();
+    const paitent = await patientsCollection.findOne({
       _id: ObjectId.createFromHexString(id),
     });
     if (!paitent) throw new Error("Error: Paitent not found");

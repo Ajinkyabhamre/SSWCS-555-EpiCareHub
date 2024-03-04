@@ -5,8 +5,10 @@ import Home from "./components/Home";
 import PatientInput from "./components/PatientInput";
 import RegistrationPage from "./components/RegistrationPage";
 import Navbar from "./components/Navbar";
+import Signin from './components/EpiCareHubLogin';
 
-function App() {
+//function App() {
+const App = () => {
   return (
     <Router>
       <header>
@@ -14,14 +16,20 @@ function App() {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/pinput" element={<PatientInput />} />
+          <Route path="/Signin" element={<Signin />} />
           <Route path="/register" element={<RegistrationPage />} />
+          {/*<Route path="/" element={<Signin />} />*/}
+          <Route path="/home" element={<Home />} />
+          <Route path="/pinput" element={<PatientInput />} />
+          {/*<Route path="/register" element={<RegistrationPage />} />*/}
+          {/*<Route path="/" element={<Home />} />
+          <Route path="/pinput" element={<PatientInput />} />
+          <Route path="/register" element={<RegistrationPage />} />*/}
         </Routes>
       </main>
       <footer></footer>
     </Router>
   );
-}
+};
 
 export default App;

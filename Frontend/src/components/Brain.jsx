@@ -1,94 +1,86 @@
-import React,{ useEffect, useRef } from 'react'
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import React, { Suspense } from "react";
+import { Canvas, useLoader } from "@react-three/fiber";
+import { OrbitControls, Preload, useGLTF, Plane } from "@react-three/drei";
+import * as THREE from "three";
+import Loader from "./Loader";
+import { Typography } from "@mui/material";
 
-const Brain = () => {
-  const containerRef = useRef(null);
-    const cameraRef = useRef(null);
-    const sceneRef = useRef(null);
-    const rendererRef = useRef(null);
-    const controlsRef = useRef(null);
-    const objectRef = useRef(null);
+const BrainModel = () => {
+  const texture = useLoader(THREE.TextureLoader, "/obj/blender/Brain.png");
+  const brain = useGLTF("/obj/blender/Brain2.gltf");
+  console.log(brain);
+  if (brain.materials) {
+    Object.keys(brain.materials).forEach((material) => {
+      brain.materials[material].color = new THREE.Color(0x00ffff);
+    });
+  }
+  const blueMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff }); // Blue material
+  const redMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red material
 
-    useEffect(() => {
-        init();
-        animate();
+  brain.scene.traverse((child) => {
+    if (child.isMesh) {
+      switch (child.name) {
+        case "Brain_Part_02":
+          child.material.color = new THREE.Color(0x3f0a0c);
+          break;
+        case "Brain_Part_04":
+          child.material.color = new THREE.Color(0xffffff);
+          break;
+        case "Brain_Part_05":
+          child.material.color = new THREE.Color(0xffffb1);
+          break;
+        case "Brain_Part_06":
+          child.material.color = new THREE.Color(0xf2aeb1);
+          break;
+      }
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
 
-        return () => {
-            // Cleanup if necessary
-        };
-    }, []);
+  return (
+    <mesh>
+      <directionalLight intensity={1} position={[0, 1, 0]} castShadow />
+      <directionalLight intensity={1} position={[0, -1, 0]} castShadow />
+      <directionalLight intensity={1} position={[1, 0, 0]} />
+      <directionalLight intensity={1} position={[-1, 0, 0]} />
+      <directionalLight intensity={1} position={[0, 0, 1]} />
+      <directionalLight intensity={1} position={[0, 0, -1]} />
 
-    const init = () => {
-        const container = containerRef.current;
-        const camera = new THREE.PerspectiveCamera(45, 500 / 500, 1, 2000);
-        camera.position.z = -10;
-        cameraRef.current = camera;
+      {/* <directionalLight position={[1, 1, 1]} />
+      <directionalLight position={[-1, -1, -1]} /> */}
 
-        const scene = new THREE.Scene();
-        sceneRef.current = scene;
-
-        const ambientLight = new THREE.AmbientLight(0x880808, 0.9);
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xffffff, 0.8);
-        camera.add(pointLight);
-        scene.add(camera);
-
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(500, 500);
-        container.appendChild(renderer.domElement);
-        rendererRef.current = renderer;
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.minDistance = 10;
-        controls.maxDistance = 80;
-        controls.rotateSpeed = 3.0;
-        controls.maxPolarAngle = Math.PI / 2;
-        controlsRef.current = controls;
-
-        loadModel();
-    };
-
-    const loadModel = () => {
-        const { current: scene } = sceneRef;
-        const loader = new OBJLoader();
-        loader.load(
-            '/obj/brain.Obj',
-            (object) => {
-                scene.add(object);
-                objectRef.current = object;
-            },
-            (xhr) => {
-                console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-            },
-            (error) => {
-                console.error('An error happened', error);
-            }
-        );
-    };
-
-    const animate = () => {
-        requestAnimationFrame(animate);
-        const { current: controls } = controlsRef;
-        if (controls) {
-            controls.update();
-        }
-        renderScene();
-    };
-
-    const renderScene = () => {
-        const { current: camera } = cameraRef;
-        const { current: scene } = sceneRef;
-        const { current: renderer } = rendererRef;
-        if (camera && renderer) {
-            camera.lookAt(scene.position);
-            renderer.render(scene, camera);
-        }
-    };
-
-    return <div ref={containerRef} style={{ width: '500px', height: '500px' }} />;
+      <primitive object={brain.scene} scale={15} position={[0, 0, 0]} />
+      {/* <meshPhongMaterial color={new THREE.Color(0xff0000)} /> */}
+      {/* <Plane receiveShadow rotation={[-Math.PI / 2, 0, 0]} args={[100, 100]} /> */}
+    </mesh>
+  );
 };
 
-export default Brain
+const Brain = () => {
+  return (
+    <div style={{ width: "100%", height: "90vh" }}>
+      <Typography variant="h2">Brain Visualizer</Typography>
+      <Canvas
+        frameloop="demand"
+        shadows
+        camera={{ position: [10, 10, 10], fov: 30 }}
+        gl={{ preserveDrawingBuffer: true }}
+      >
+        <Suspense fallback={<Loader />}>
+          <OrbitControls
+            enableZoom={false}
+            maxPolarAngle={Math.PI / 2}
+            minPolarAngle={Math.PI / 2}
+            autoRotate
+            autoRotateSpeed={1}
+          />
+          <BrainModel />
+        </Suspense>
+        <Preload all />
+      </Canvas>
+    </div>
+  );
+};
+
+export default Brain;

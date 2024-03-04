@@ -14,6 +14,8 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.11",
     "@mui/material": "^5.15.11",
+    "@react-three/drei": "^9.99.5",
+    "@react-three/fiber": "^8.15.19",
     "axios": "^1.6.7",
     "bootstrap": "^5.3.3",
     "md5": "^2.3.0",

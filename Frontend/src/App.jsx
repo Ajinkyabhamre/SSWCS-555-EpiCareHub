@@ -6,6 +6,7 @@ import PatientInput from "./components/PatientInput";
 import RegistrationPage from "./components/RegistrationPage";
 import Navbar from "./components/Navbar";
 import Signin from './components/EpiCareHubLogin';
+import Brain from "./components/Brain";
 
 //function App() {
 const App = () => {
@@ -20,6 +21,7 @@ const App = () => {
           <Route path="/register" element={<RegistrationPage />} />
           {/*<Route path="/" element={<Signin />} />*/}
           <Route path="/home" element={<Home />} />
+          <Route path="/brain" element={<Brain />} />
           <Route path="/pinput" element={<PatientInput />} />
           {/*<Route path="/register" element={<RegistrationPage />} />*/}
           {/*<Route path="/" element={<Home />} />

@@ -16,6 +16,11 @@ const Navbar = () => {
             </NavLink>
           </li>
           <li className="nav-item">
+            <NavLink activeClassName="active" className="nav-link" to="/brain" end>
+              Brain
+            </NavLink>
+          </li>
+          <li className="nav-item">
             <NavLink
               activeClassName="active"
               className="nav-link"

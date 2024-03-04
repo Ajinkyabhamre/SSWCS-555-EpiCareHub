@@ -29,10 +29,10 @@ const Navbar = () => {
             <NavLink
               activeClassName="active"
               className="nav-link"
-              to="/register"
+              to="/Signin"
               end
             >
-              Register
+              Login
             </NavLink>
           </li>
         </ul>

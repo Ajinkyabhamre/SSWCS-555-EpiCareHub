@@ -75,22 +75,6 @@ const Signin = () => {
       <a className="link" href="/register">
         Sign Up
       </a>
-      {/*<Snackbar
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleClose}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-      />*/}
     </div>
   );
 };

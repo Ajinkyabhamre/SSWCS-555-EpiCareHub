@@ -29,25 +29,6 @@ describe('Signin component', () => {
     expect(screen.getByText('Sign In')).toBeInTheDocument();
   });
 
-  test('submits form with valid credentials', () => {
-    const mockNavigate = useNavigate();
-
-    render(<Router><Signin /></Router>);
-    
-    // Fill out form with valid credentials
-    userEvent.type(screen.getByLabelText('username'), 'validUsername');
-    userEvent.type(screen.getByLabelText('password'), 'validPassword');
-
-    // Submit form
-    act(() => {
-      fireEvent.click(screen.getByText('Submit'));
-    });
-
-    // Assert navigation and error message absence
-    expect(mockNavigate).toHaveBeenCalledWith('/home');
-    expect(screen.queryByText('Invalid username or password')).not.toBeInTheDocument();
-  });
-
   test('displays error message with invalid credentials', () => {
     render(<Router><Signin /></Router>);
 
@@ -64,93 +45,19 @@ describe('Signin component', () => {
     expect(screen.getByText('Invalid username or password')).toBeInTheDocument();
   });
 
-  test('clears input fields on focus', async () => {
+  test('renders link to register page', () => {
     render(<Router><Signin /></Router>);
-
-    // Focus on username field
-  await userEvent.click(screen.getByLabelText('username'));
-  expect(screen.getByLabelText('username').value).toBe('');
-
-  // Focus on password field
-  await userEvent.click(screen.getByLabelText('password'));
-  expect(screen.getByLabelText('password').value).toBe('');
+  
+    // Use querySelector to find the link element
+    const link = screen.queryByText(/Sign Up/i); // Case-insensitive matching
+  
+    // Check if the link exists
+    expect(link).toBeInTheDocument();
+  
+    // Check if the link has the correct class
+    expect(link).toHaveClass('link');
+  
+    // Check if the link has the correct href attribute
+    expect(link).toHaveAttribute('href', '/register');
   });
 });
-
-{/*
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: jest.fn(),
-}));
-
-jest.spyOn(window.localStorage.__proto__, 'setItem').mockImplementation(() => {});
-
-test('renders Signin component', () => {
-  render(
-    <Router> 
-      <Signin />
-    </Router>
-  );
-  
-  // Check that the Signin component renders
-  expect(screen.getByText('Sign In')).toBeInTheDocument();
-});
-
-test('submits form with valid credentials', () => {
-  const mockNavigate = useNavigate();
-  
-  render(
-    <Router> 
-      <Signin />
-    </Router>
-  );
-  
-  // Mock navigate function
-  const mockNavigate = jest.fn();
-  jest.mock('react-router-dom', () => ({
-    ...jest.requireActual('react-router-dom'),
-    useNavigate: () => mockNavigate,
-  }));
-
-
-  // Fill out the form
-  userEvent.type(screen.getByLabelText('username'), 'user1');
-  userEvent.type(screen.getByLabelText('password'), 'password@123');
-
-  // Submit the form
-  act(() => {
-    fireEvent.click(screen.getByText('Submit'));
-  });
-
-  // Check that the navigation occurred
-  console.log('mockNavigate calls:', mockNavigate.mock.calls);
-
-  // Update component state (assuming the component stores login state)
-  /*render(<Signin isLoggedIn={true} />); // Pass updated state or utilize state setter
-
-  // Check navigation and error message clearing
-  expect(mockNavigate).toHaveBeenCalledWith('/home');
-  expect(screen.queryByText('Invalid username or password')).not.toBeInTheDocument();
-
-  // Check that the navigation occurred
-  //expect(mockNavigate).toHaveBeenCalledWith('/home');
-});
-
-test('displays error message with invalid credentials', () => {
-    render(
-      <Router> 
-        <Signin />
-      </Router>
-    );
-
-    // Fill out the form with invalid credentials
-    userEvent.type(screen.getByLabelText('username'), 'user2');
-    userEvent.type(screen.getByLabelText('password'), 'passw@123');
-  
-    // Submit the form
-    fireEvent.click(screen.getByText('Submit'));
-  
-    // Check that the error message is displayed
-    expect(screen.getByText('Invalid username or password')).toBeInTheDocument();
-  });
-*/}

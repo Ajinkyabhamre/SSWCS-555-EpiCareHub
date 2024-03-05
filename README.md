@@ -7,7 +7,8 @@ Through an interactive interface like clicking or rotating the 3D visualization 
 <p>Welcome!  <br>
 This is place through which we are developing and maintaining the code for our web application. The tech stack used are -
 <ul>
-  <li>Programming Languages- React, Python</li>
+  <li>Frontend Programming Languages- React</li>
+    <li>Backend Programming Languages- Node, Python</li>
     <li>Database- MongoDB, Postgres   </li>
     <li>Unit Testing- Jest, Pytest  </li>
     <li>Automation Tool- Selenium  </li>

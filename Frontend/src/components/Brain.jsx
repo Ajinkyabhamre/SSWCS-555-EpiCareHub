@@ -8,16 +8,57 @@ import { Typography } from "@mui/material";
 const BrainModel = () => {
   const texture = useLoader(THREE.TextureLoader, "/obj/blender/Brain.png");
   const brain = useGLTF("/obj/blender/Brain2.gltf");
-  console.log(brain);
-  if (brain.materials) {
-    Object.keys(brain.materials).forEach((material) => {
-      brain.materials[material].color = new THREE.Color(0x00ffff);
+
+  const createCustomMaterial = (texture) => {
+    return new THREE.ShaderMaterial({
+      uniforms: {},
+      vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+      fragmentShader: `
+            varying vec2 vUv;
+            
+            void main() {
+                // Simulate heatmap texture
+                
+                // Determine the vertical position (normalized)
+                float t = clamp(vUv.y, 0.0, 1.0); // Clamp vUv.y to the range [0, 1]
+                
+                vec3 color;
+                if (t < 0.2) {
+                  // color = oxf2aeb1;
+                } else if (t < 0.4) {
+                  // Yellow to Orange
+                  color = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.5, 0.0), (t - 0.2) * 5.0);
+                } else if (t < 0.6) {
+                  // Orange to Red
+                  color = mix(vec3(1.0, 0.5, 0.0), vec3(1.0, 0.0, 0.0), (t - 0.4) * 5.0);
+                } else if (t < 0.8) {
+                  // Red to Dark Red
+                  color = mix(vec3(1.0, 0.0, 0.0), vec3(0.5, 0.0, 0.0), (t - 0.6) * 5.0);
+                } else if (t < 0.9) {
+                  // Green to Yellow
+                  color = mix(vec3(0.0, 0.5, 0.0), vec3(1.0, 1.0, 0.0), t * 5.0);
+                } else {
+                  // Dark Red
+                  color = vec3(0.5, 0.0, 0.0);
+                }
+                
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `,
     });
-  }
+  };
+
   const blueMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff }); // Blue material
   const redMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red material
 
   brain.scene.traverse((child) => {
+    console.log(child);
     if (child.isMesh) {
       switch (child.name) {
         case "Brain_Part_02":
@@ -31,6 +72,7 @@ const BrainModel = () => {
           break;
         case "Brain_Part_06":
           child.material.color = new THREE.Color(0xf2aeb1);
+          child.material = createCustomMaterial(texture);
           break;
       }
       child.castShadow = true;
@@ -50,7 +92,7 @@ const BrainModel = () => {
       {/* <directionalLight position={[1, 1, 1]} />
       <directionalLight position={[-1, -1, -1]} /> */}
 
-      <primitive object={brain.scene} scale={15} position={[0, 0, 0]} />
+      <primitive object={brain.scene} scale={15} position={[1, -3, 0]} />
       {/* <meshPhongMaterial color={new THREE.Color(0xff0000)} /> */}
       {/* <Plane receiveShadow rotation={[-Math.PI / 2, 0, 0]} args={[100, 100]} /> */}
     </mesh>
@@ -59,7 +101,7 @@ const BrainModel = () => {
 
 const Brain = () => {
   return (
-    <div style={{ width: "100%", height: "90vh" }}>
+    <div className="brain-canvas">
       <Typography variant="h2">Brain Visualizer</Typography>
       <Canvas
         frameloop="demand"

@@ -1,149 +1,178 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { TextField, Button, Typography } from "@mui/material";
+import Snackbar from "@mui/material/Snackbar";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+//import moment from "moment";
 
-const RegistrationPage = () => {
+const UserInput = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    firstName: "",
+    lastName: "",
+    username: "",
+    email: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("Successfully Added User");
+  const [open, setOpen] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let errorMessage = '';
-  
-    if (name === 'email') {
-      const isValidEmail = /\S+@\S+\.\S+/.test(value);
-      errorMessage = isValidEmail ? '' : 'Invalid email format';
-    }
-  
     setFormData({
       ...formData,
       [name]: value,
     });
-  
-    setError(errorMessage);
   };
-  
+
+  const emailRegex =
+    /^[\w-]+(?:\.[\w-]+)*@(?:[\w-]+\.)+[a-zA-Z]{2,7}$/;
+
+  const validateForm = async () => {
+    const data = {
+      firstName: formData.firstName?.trim(),
+      lastName: formData.lastName?.trim(),
+      username: formData.username?.trim(),
+      //dob: moment(formData.dob).format("MM/DD/YYYY"),
+      email: formData.email?.trim(),
+      password: formData.password?.trim(),
+    };
+    if (!data.firstName) {
+      setError("First Name is invalid!");
+      return;
+    }
+    if (!data.lastName) {
+      setError("Last Name is invalid!");
+      return;
+    }
+    if (!data.username) {
+      setError("username is invalid!");
+      return;
+    }
+    if (!emailRegex.test(data.email)) {
+      setError("Invalid Email!");
+      return;
+    }
+    if (!data.password) {
+      setError("password is invalid!");
+      return;
+    }
+    setError("");
+    return data;
+  };
+
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setOpen(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    try {
-      const response = await axios.post('http://localhost:3000/register', formData);
-      console.log(response.data);
-      // Optionally, you can redirect the user to another page after successful registration
-    } catch (error) {
-      setError('Registration failed');
-      console.error(error);
-    }
+    const data = await validateForm();
+    if (data)
+      axios.post("http://localhost:3000/users", data).then((res) => {
+        setOpen(true);
+        setFormData({
+          firstName: "",
+          lastName: "",
+          username: "",
+          email: "",
+          password: "",
+        });
+      });
   };
 
   return (
-    <div className="registration-container">
-      <h2 style={{ textAlign: 'center' }}>Registration</h2>
-      <form onSubmit={handleSubmit} className="registration-form" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        
-        
-      <div className="form-group"style={{ marginBottom: '15px', display: 'flex' }}>
-
-          <label htmlFor="name"style={{ width: '100px' }}>Name:</label>
-          <input
+    <div className="page-container">
+      <Typography variant="h4">Register</Typography>
+      <form className="form-container" onSubmit={handleSubmit}>
+        <div>
+          <TextField
+            id="firstName"
+            label="First Name"
             type="text"
-            id="name"
-            name="name"
-            value={formData.name}
+            name="firstName"
+            value={formData.firstName}
             onChange={handleChange}
             required
-            style={{ height: '30px' }}
-
           />
-
         </div>
-        <div className="form-group"style={{ marginBottom: '15px', display: 'flex' }}>
-
-          <label htmlFor="surname"style={{ width: '100px' }}>Surname:</label>
-          <input
+        <div>
+          <TextField
+            id="lastName"
+            label="Last Name"
             type="text"
-            id="surname"
-            name="surname"
-            value={formData.surname}
+            name="lastName"
+            value={formData.lastName}
             onChange={handleChange}
             required
-            style={{ height: '30px' }}
-
           />
         </div>
-
-        
-        
-        
-        <div className="form-group"style={{ marginBottom: '15px', display: 'flex' }}>
-
-          <label htmlFor="username"style={{ width: '100px' }}>Username:</label>
-          <input
-            type="text"
+        <div>
+          <TextField
             id="username"
+            label="Username"
+            type="text"
             name="username"
             value={formData.username}
             onChange={handleChange}
+            // InputLabelProps={{
+            //   shrink: true,
+            // }}
+            // inputProps={{
+            //   max: moment().format("YYYY-MM-DD"),
+            // }}
             required
-            style={{ height: '30px' }}
-
           />
         </div>
-        <div className="form-group"style={{ marginBottom: '15px', display: 'flex' }}>
-
-          <label htmlFor="email" style={{ width: '100px' }}>Email:</label>
-          <input
-            type="email"
+        <div>
+          <TextField
             id="email"
+            label="Email"
+            type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
-            style={{ height: '30px' }}
-
           />
         </div>
-        <div className="form-group"style={{ marginBottom: '15px', display: 'flex' }}>
-
-          <label htmlFor="password"style={{ width: '100px' }}>Password:</label>
-          <input
-            type="password"
+        <div>
+          <TextField
             id="password"
+            label="Password"
+            type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
-            style={{ height: '30px' }}
-
           />
         </div>
-        <div className="form-group"style={{ marginBottom: '15px', display: 'flex' }}>
-
-          <label htmlFor="confirmPassword"style={{ width: '100px' }}>Confirm Password:</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            style={{ height: '30px' }}
-
-          />
-        </div>
-        <div className="error" style={{ textAlign: 'center', marginBottom: '10px' }}>{error}</div>
-        <button type="submit" style={{ display: 'block', margin: '0 auto', backgroundColor: 'blue', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Register</button>
+        <div className="todo-errors">{error && <span>{error}</span>}</div>
+        <Button type="submit">Submit</Button>
       </form>
+      <Snackbar
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        open={open}
+        autoHideDuration={3000}
+        onClose={handleClose}
+        message={message}
+        action={
+          <IconButton
+            size="small"
+            aria-label="close"
+            color="inherit"
+            onClick={handleClose}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        }
+      />
     </div>
   );
 };
 
-export default RegistrationPage;
+export default UserInput;

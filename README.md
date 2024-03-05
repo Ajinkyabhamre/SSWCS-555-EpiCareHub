@@ -16,3 +16,5 @@ This is place through which we are developing and maintaining the code for our w
 
 The development is in-progress so tech stack can be modified in future.</p>
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/9WHruia3osscYXEUoJiFXB/4WeuN4KJSB5JHBXWGA6yxT/tree/main.svg?style=svg&circle-token=235d1f476b7f2b359ae40855db7c6a814db4d1be)](https://dl.circleci.com/status-badge/redirect/circleci/9WHruia3osscYXEUoJiFXB/4WeuN4KJSB5JHBXWGA6yxT/tree/main)
+

@@ -7,7 +7,7 @@ jobs:
   test-node:
     # Install node dependencies and run tests
     executor: node/default
-    working_directory: ~/project/Backend
+    working_directory: ~/project/Frontend
     steps:
       - checkout:
           path: ~/project

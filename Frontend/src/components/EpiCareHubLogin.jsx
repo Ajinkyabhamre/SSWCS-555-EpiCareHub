@@ -41,6 +41,7 @@ const Signin = () => {
       <Typography variant="h4" align='center'>Sign In</Typography>
       <form className="form-container" onSubmit={handleSubmit}>
         <div>
+        <label htmlFor="username"></label>
           <TextField
             type="text"
             id="username"
@@ -50,9 +51,11 @@ const Signin = () => {
             onFocus={() => setUsername('')}
             className="text_input"
             required
+            aria-labelledby="username"
           />
         </div>
         <div>
+        <label htmlFor="password"></label>
           <TextField
             type="password"
             id="password"
@@ -62,31 +65,16 @@ const Signin = () => {
             onFocus={() => setPassword('')}
             className="text_input"
             required
+            aria-labelledby="password"
           />
         </div>
         {/*<div className="todo-errors">{error && <span>{error}</span>}</div>*/}
         <Button type="submit">Submit</Button>
       </form>
-      <p style={{ color: 'red' }}>{error}</p>
+      <p className="error" style={{ color: 'red' }}>{error}</p>
       <a className="link" href="/register">
         Sign Up
       </a>
-      <Snackbar
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleClose}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-        />
     </div>
   );
 };

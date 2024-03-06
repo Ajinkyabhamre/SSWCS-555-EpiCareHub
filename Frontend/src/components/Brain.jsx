@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unknown-property */
 import React, { Suspense } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, Preload, useGLTF, Plane } from "@react-three/drei";
@@ -58,7 +59,6 @@ const BrainModel = () => {
   const redMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red material
 
   brain.scene.traverse((child) => {
-    console.log(child);
     if (child.isMesh) {
       switch (child.name) {
         case "Brain_Part_02":
@@ -72,7 +72,7 @@ const BrainModel = () => {
           break;
         case "Brain_Part_06":
           child.material.color = new THREE.Color(0xf2aeb1);
-          child.material = createCustomMaterial(texture);
+          child.material = createCustomMaterial(texture);     
           break;
       }
       child.castShadow = true;
@@ -93,8 +93,6 @@ const BrainModel = () => {
       <directionalLight position={[-1, -1, -1]} /> */}
 
       <primitive object={brain.scene} scale={15} position={[1, -3, 0]} />
-      {/* <meshPhongMaterial color={new THREE.Color(0xff0000)} /> */}
-      {/* <Plane receiveShadow rotation={[-Math.PI / 2, 0, 0]} args={[100, 100]} /> */}
     </mesh>
   );
 };

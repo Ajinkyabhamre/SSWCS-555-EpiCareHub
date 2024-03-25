@@ -10,7 +10,6 @@ const exportedMethods = {
     email = checkIsProperString(email, "email");
     password = checkIsProperString(password, "password");
 
-
     let newUser = {
       firstName: firstName,
       lastName: lastName,

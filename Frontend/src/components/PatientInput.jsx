@@ -90,7 +90,7 @@ const PatientInput = () => {
 
   return (
     <div className="page-container">
-      <Typography variant="h4">Patient Information Form</Typography>
+      <Typography variant="h4">Patient Information Form</Typography>  
       <form className="form-container" onSubmit={handleSubmit}>
         <div>
           <TextField

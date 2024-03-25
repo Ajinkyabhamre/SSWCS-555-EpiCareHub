@@ -33,8 +33,8 @@ describe('Signin component', () => {
     render(<Router><Signin /></Router>);
 
     // Fill out form with invalid credentials
-    userEvent.type(screen.getByLabelText('username'), 'invalidUser');
-    userEvent.type(screen.getByLabelText('password'), 'invalidPassword');
+    userEvent.type(screen.getByLabelText('Username'), 'invalidUser');
+    userEvent.type(screen.getByLabelText('Password'), 'invalidPassword');
 
     // Submit form
     act(() => {

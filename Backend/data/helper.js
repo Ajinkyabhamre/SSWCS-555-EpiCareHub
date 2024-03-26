@@ -53,4 +53,13 @@ export const isDateValid = (dateStr, varName) => {
 };
 
 
+export const validateEmail = (email) => {
+  checkIsProperString(email, "email");
+  var validRegex =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+  if (!email.match(validRegex)) throw new Error('email is invald');
+
+  return email;
+};
+
 

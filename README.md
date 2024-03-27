@@ -18,10 +18,12 @@ This is place through which we are developing and maintaining the code for our w
 The development is in-progress so tech stack can be modified in future.</p>
 
 <h4>How to run the application:</h4>
-<p>In terminal go to Frontend Folder. From Frontend folder run command- <b> npm i</b>b>
+<p>In terminal go to Frontend Folder. From Frontend folder run command- <b> npm i</b>
   and then <b>npm run dev</b> <br>
-You will get a link for application e.g., <b><i>Local:   http://localhost:3000/</i></b> <br>
-In terminal go to Backend Folder. From Backend folder run command- <b>npm start</b> <br></p>
+You will get a link for application e.g., <b><i>Local:   http://localhost:5173/</i></b> <br>
+In terminal go to Backend Folder. From Backend folder run command - <b> npm i </b> 
+and then <b>npm start</b> <br></p>
+You will get a messagae printed of server for application e.g., <b><i>Local:   http://localhost:3000//</i></b> <br>
 
 <h4>Status of CI</h4>
 

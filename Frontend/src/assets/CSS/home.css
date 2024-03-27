@@ -1,0 +1,38 @@
+@media (max-width: 767px) {
+    .main-content {
+        padding-top: 100px;
+    }
+}
+
+.main-title {
+    font-size: 4rem;
+}
+
+.signUpButton {
+    margin-right: 2%;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    /* Set minimum height of the wrapper to full viewport height */
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    padding-top: 5%;
+    min-height: 100vh;
+    /* Set minimum height of the main content to full viewport height */
+}
+
+
+
+.footer {
+    margin-top: auto;
+    /* Push footer to the bottom */
+    background-color: transparent;
+    padding: 20px 0;
+    text-align: center;
+}

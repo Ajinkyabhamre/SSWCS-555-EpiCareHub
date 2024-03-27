@@ -8,11 +8,12 @@ import {
 } from "react-router-dom";
 import "./App.scss";
 import Home from "./components/Home";
-import PatientInput from "./components/PatientInput";
 import UserInput from "./components/RegistrationPage";
 import Navbar from "./components/Navbar";
 import Signin from "./components/EpiCareHubLogin";
 import Brain from "./components/Brain";
+import Patients from "./components/Patients";
+import PatientDetails from "./components/PatientDetails";
 
 const PrivateRoute = ({ component: Component, ...rest }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -22,11 +23,11 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
 
 const App = () => {
   const [isAuth, setIsAuth] = useState(localStorage.getItem("isLoggedIn"));
-  const isLogin = localStorage.getItem("isLoggedIn");
 
   useEffect(() => {
-    setIsAuth(localStorage.getItem("isLoggedIn"));
-  }, [isLogin]);
+    const authStatus = localStorage.getItem("isLoggedIn");
+    setIsAuth(authStatus);
+  }, [localStorage.getItem("isLoggedIn")]);
 
   return (
     <Router>
@@ -37,8 +38,12 @@ const App = () => {
         <Routes>
           <Route path="/" element={<PrivateRoute component={Home} />} />
           <Route
-            path="/pinput"
-            element={<PrivateRoute component={PatientInput} />}
+            path="/patients"
+            element={<PrivateRoute component={Patients} />}
+          />
+          <Route
+            path="/patient/:id"
+            element={<PrivateRoute component={PatientDetails} />}
           />
           <Route path="/brain" element={<PrivateRoute component={Brain} />} />
           <Route path="/signin" element={<Signin />} />

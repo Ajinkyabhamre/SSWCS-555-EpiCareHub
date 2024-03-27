@@ -1,15 +1,42 @@
 /* eslint-disable react/no-unknown-property */
-import React, { Suspense } from "react";
+import React, { Suspense, useState } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, Preload, useGLTF, Plane } from "@react-three/drei";
 import * as THREE from "three";
 import Loader from "./Loader";
 import { Typography } from "@mui/material";
 
-const BrainModel = () => {
+const BrainModel = ({ onClick }) => {
   const texture = useLoader(THREE.TextureLoader, "/obj/blender/Brain.png");
   const brain = useGLTF("/obj/blender/Brain2.gltf");
+  const [hovered, setHovered] = useState(false);
+  const handleClick = (event) => {
+    const { offsetX, offsetY } = event.nativeEvent;
+    // console.log(intersects);
+    if (event.intersections.length > 0) {
+      const intersect = event.intersections[0];
+      // Get the position where the click occurred
+      const { point } = intersect;
+      // console.log("Clicked on the 3D model at position:", point);
+      // Call the onClick function passed from parent component
+      const popup = document.createElement("div");
+      popup.textContent = event.object.name + " clicked!";
+      popup.style.position = "absolute";
+      popup.style.top = `${event.y}px`; // Position the popup at the click coordinates
+      popup.style.left = `${event.x}px`;
+      popup.style.background = "white";
+      popup.style.padding = "10px";
+      popup.style.border = "1px solid black";
+      popup.style.zIndex = "1000"; // Ensure the popup is on top of other elements
+      document.body.appendChild(popup);
 
+      // Remove the popup after a certain time (e.g., 3 seconds)
+      setTimeout(() => {
+        document.body.removeChild(popup);
+      }, 2000);
+      onClick(point);
+    }
+  };
   const createCustomMaterial = (texture) => {
     return new THREE.ShaderMaterial({
       uniforms: {},
@@ -72,7 +99,7 @@ const BrainModel = () => {
           break;
         case "Brain_Part_06":
           child.material.color = new THREE.Color(0xf2aeb1);
-          child.material = createCustomMaterial(texture);     
+          child.material = createCustomMaterial(texture);
           break;
       }
       child.castShadow = true;
@@ -81,7 +108,7 @@ const BrainModel = () => {
   });
 
   return (
-    <mesh>
+    <mesh onClick={handleClick}>
       <directionalLight intensity={1} position={[0, 1, 0]} castShadow />
       <directionalLight intensity={1} position={[0, -1, 0]} castShadow />
       <directionalLight intensity={1} position={[1, 0, 0]} />
@@ -98,9 +125,12 @@ const BrainModel = () => {
 };
 
 const Brain = () => {
+  const handleClick = (event) => {
+    console.log("Clicked on the brain model!", event);
+    // Add your logic here for handling the click event
+  };
   return (
     <div className="brain-canvas">
-      <Typography variant="h2">Brain Visualizer</Typography>
       <Canvas
         frameloop="demand"
         shadows
@@ -112,10 +142,10 @@ const Brain = () => {
             enableZoom={false}
             maxPolarAngle={Math.PI / 2}
             minPolarAngle={Math.PI / 2}
-            autoRotate
-            autoRotateSpeed={1}
+            // autoRotate
+            // autoRotateSpeed={1}
           />
-          <BrainModel />
+          <BrainModel onClick={handleClick} />
         </Suspense>
         <Preload all />
       </Canvas>

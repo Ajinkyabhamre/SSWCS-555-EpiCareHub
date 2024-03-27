@@ -70,6 +70,9 @@ const PatientDetails = () => {
                 <span className="font-medium text-gray-600">Age:</span>
                 <span className="text-blue-600">{patient.age}</span>
               </div>
+              <div className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded w-fit">
+                <Link to={"/patients"}>Go Back to Patients List</Link>
+              </div>
             </div>
           </div>
           <div className="p-4 bg-white shadow-md rounded-lg">

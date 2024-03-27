@@ -5,11 +5,11 @@ export default {
     extend: {
       colors: {
         eh: {
-          1: "#FFFFFF", // White
-          2: "#EDE7F6", // Lavender
-          3: "#D1C4E9", // Light Purple
-          4: "#B39DDB", // Purple
-          5: "#7E57C2", // Deep Purple
+          1: "#30302F", // gray
+          2: "#EBDFC7", // cream
+          3: "#E49B42", // gold
+          4: "#65A19F", // blue
+          5: "#483029", // brown
           6: "#2196F3", // Blue
           7: "#03A9F4", // Light Blue
           8: "#80DEEA", // Cyan

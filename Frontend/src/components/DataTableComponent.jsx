@@ -7,10 +7,15 @@ import moment from "moment";
 import { Tooltip } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import GenerateIcon from "@mui/icons-material/PlayArrow";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { useNavigate } from "react-router-dom";
 
-const DataTableComponent = ({ data, onEditClick, onDeleteClick }) => {
+const DataTableComponent = ({
+  data,
+  onEditClick,
+  onDeleteClick,
+  onUploadClick,
+}) => {
   const [filters, setFilters] = useState({
     firstName: "",
     lastName: "",
@@ -118,11 +123,11 @@ const DataTableComponent = ({ data, onEditClick, onDeleteClick }) => {
         />
       </Tooltip>
       <Tooltip title="Generate Epilepsy" arrow>
-        <GenerateIcon
+        <FileUploadIcon
           className="cursor-pointer text-green-800"
           onClick={(e) => {
             e.stopPropagation();
-            // console.log(rowData);
+            onUploadClick(rowData);
           }}
         />
       </Tooltip>

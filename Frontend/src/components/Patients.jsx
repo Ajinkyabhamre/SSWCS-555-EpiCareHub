@@ -8,6 +8,7 @@ import { Dialog } from "primereact/dialog";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import axios from "axios";
 import PatientForm from "./PatientForm";
+import { useNavigate } from "react-router-dom";
 
 const Patients = () => {
   const [data, setData] = useState([]);
@@ -16,8 +17,26 @@ const Patients = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isFile, setIsFile] = useState(false);
   const [message, setMessage] = useState("Successfully Added Patient");
   const [open, setOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const navigate = useNavigate();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setSelectedFile(file);
+  };
+
+  const handleFileSubmit = () => {
+    if (selectedFile) {
+      navigate(`/patient/${selectedPatient._id}`);
+      setSelectedFile(null);
+    } else {
+      setMessage("No file selected.");
+      setOpen(true);
+    }
+  };
 
   const handleEditClick = useCallback((patient) => {
     setSelectedPatient(patient);
@@ -131,6 +150,12 @@ const Patients = () => {
     setConfirmDelete(true);
   }, []);
 
+  const handleUploadClick = useCallback((patient) => {
+    setSelectedPatient(patient);
+    setIsFile(true);
+    setVisible(true);
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -150,9 +175,9 @@ const Patients = () => {
   return (
     <div className="rounded-lg overflow-hidden shadow-lg border border-gray-200 hover:shadow-xl">
       <div className="flex justify-between p-4">
-        <h3 className="text-lg font-crete">Patients List - {data?.length}</h3>
+        <h3 className="text-2xl font-crete">Patients List - {data?.length}</h3>
         <button
-          className="font-crete bg-eh-4 hover:bg-eh-5 text-white font-bold py-2 px-4 rounded"
+          className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
           onClick={() => {
             setSelectedPatient(null);
             setVisible(true);
@@ -165,14 +190,46 @@ const Patients = () => {
         data={data}
         onEditClick={handleEditClick}
         onDeleteClick={handleDeleteClick}
+        onUploadClick={handleUploadClick}
       />
       <Dialog
-        header={selectedPatient ? "Edit Patient" : "Add Patient"}
+        header={
+          isFile
+            ? "Upload EEG Data"
+            : selectedPatient
+            ? "Edit Patient"
+            : "Add Patient"
+        }
         visible={visible}
-        // style={{ width: "50vw" }}
         onHide={() => setVisible(false)}
       >
-        <PatientForm patient={selectedPatient} onSubmit={handleSubmit} />
+        {isFile ? (
+          <div className="mt-4">
+            <label
+              htmlFor="fileInput"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Upload EDF/MAT File
+            </label>
+            <input
+              id="fileInput"
+              name="fileInput"
+              type="file"
+              accept=".edf, .mat"
+              onChange={handleFileChange}
+              className="mt-4 block w-full px-3 py-2 border border-eh-4 rounded-md shadow-sm focus:outline-none focus:ring-eh-3 focus:border-eh-3 sm:text-sm"
+            />
+            <button
+              className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
+              type="button"
+              onClick={handleFileSubmit}
+            >
+              Submit File
+            </button>
+          </div>
+        ) : (
+          <PatientForm patient={selectedPatient} onSubmit={handleSubmit} />
+        )}
       </Dialog>
       <Snackbar
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}

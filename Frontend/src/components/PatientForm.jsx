@@ -169,7 +169,12 @@ const PatientForm = ({ onSubmit, patient }) => {
           />
         </div>
         <div className="todo-errors">{error && <span>{error}</span>}</div>
-        <Button type="submit">{patient ? "Update" : "Submit"}</Button>
+        <button
+          className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
+          type="submit"
+        >
+          {patient ? "Update " : "Add"}
+        </button>
       </form>
     </div>
   );

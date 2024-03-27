@@ -25,7 +25,7 @@ const PatientDetails = () => {
       });
   }, [id]);
   return (
-    <div className="bg-gray-400 h-full p-4 grid grid-cols-1 lg:grid-cols-2 overflow-hidden w-full mx-auto gap-4">
+    <div className="bg-gray-200 h-full p-4 grid grid-cols-1 lg:grid-cols-2 overflow-hidden w-full mx-auto gap-4">
       {patient && (
         <>
           <div className="p-4 bg-white shadow-md rounded-lg">

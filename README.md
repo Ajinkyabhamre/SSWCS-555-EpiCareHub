@@ -19,7 +19,8 @@ The development is in-progress so tech stack can be modified in future.</p>
 
 <h4>How to run the application:</h4>
 <p>In terminal go to Frontend Folder. From Frontend folder run command- <b>npm run dev</b> <br>
-You will get a link for application e.g., <b><i>Local:   http://localhost:3000/</i></b> </p>
+You will get a link for application e.g., <b><i>Local:   http://localhost:3000/</i></b> <br>
+In terminal go to Backend Folder. From Backend folder run command- <b>npm start</b> <br></p>
 
 <h4>Status of CI</h4>
 

@@ -30,17 +30,16 @@ const Navbar = () => {
   }, [pathname]);
 
   const handleLogout = () => {
-    console.log("Hi");
     navigate("/signin");
     localStorage.removeItem("isLoggedIn");
     setIsAuth(false);
   };
 
   return (
-    <div className="static w-full top-0 bg-eh-5 z-50">
+    <div className="static w-full top-0 bg-eh-9 z-50 font-crete">
       <div className="flex items-center px-5 py-5">
         <Link
-          className="flex justify-center items-center font-oswald w-[12rem] text-white font-medium text-2xl hover:text-eh-22"
+          className="flex justify-center items-center font-oswald w-[12rem] text-white font-medium text-2xl hover:text-eh-5"
           to="/"
         >
           <img src={brain} width={48} height={40} alt="EpiCareHub" />
@@ -56,9 +55,9 @@ const Navbar = () => {
                   <Link
                     key={item.id}
                     to={item.url}
-                    className={`block relative font-oswald uppercase text-eh-1 transition-colors hover:text-eh-22 px-6 ${
+                    className={`block relative font-oswald uppercase text-eh-14 transition-colors hover:text-eh-22 px-6 ${
                       pathname?.includes(item.name)
-                        ? "z-10 text-eh-22"
+                        ? "z-10 text-eh-2"
                         : "text-eh-1"
                     } hover:text-eh-1`}
                   >
@@ -66,14 +65,14 @@ const Navbar = () => {
                   </Link>
                 );
               }
-              return null; // Add this line to handle non-matching items
+              return null;
             })}
           </div>
         </nav>
         <div className="flex gap-2">
           {isAuth && (
             <Link
-              className={`flex justify-center items-center font-oswald uppercase text-eh-1 transition-colors hover:text-eh-22 text-eh-1 hover:text-eh-1`}
+              className={`flex justify-center items-center font-oswald uppercase text-eh-5 transition-colors hover:text-eh-1`}
               onClick={handleLogout}
             >
               <LogoutIcon />

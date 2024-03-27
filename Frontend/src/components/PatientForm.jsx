@@ -1,22 +1,30 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { TextField, Button, Typography } from "@mui/material";
-import Snackbar from "@mui/material/Snackbar";
-import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
+import { TextField, Button } from "@mui/material";
+import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import moment from "moment";
 
-const PatientInput = () => {
+const PatientForm = ({ onSubmit, patient }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     dob: "",
-    address: "",
-    contact: "",
+    gender: "",
+    email: "",
   });
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("Successfully Added Patient");
-  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (patient) {
+      setFormData({
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        dob: moment(patient.dob).format("YYYY-MM-DD"),
+        gender: patient.gender,
+        email: patient.email,
+      });
+    }
+  }, [patient]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,16 +34,19 @@ const PatientInput = () => {
     });
   };
 
-  const usPhoneNumberRegex =
-    /^(?:\+?1\s*(?:[.-]\s*)?)?\(?(?:\d{3})\)?[-.\s]?\d{3}[-.\s]?\d{4}(?:\s*(?:#|x\.?)\s*\d{1,6})?$/;
-
+  const genderOptions = [
+    { label: "Male", value: 0 },
+    { label: "Female", value: 1 },
+    { label: "Others", value: 2 },
+    { label: "Prefer Not to Say", value: 3 },
+  ];
   const validateForm = async () => {
     const data = {
       firstName: formData.firstName?.trim(),
       lastName: formData.lastName?.trim(),
       dob: moment(formData.dob).format("MM/DD/YYYY"),
-      address: formData.address?.trim(),
-      contact: formData.contact?.trim(),
+      gender: formData.gender?.trim(),
+      email: formData.email?.trim(),
     };
     if (!data.firstName) {
       setError("First Name is invalid!");
@@ -45,14 +56,14 @@ const PatientInput = () => {
       setError("Last Name is invalid!");
       return;
     }
-    if (!data.address) {
-      setError("Address is invalid!");
+    if (!data.gender) {
+      setError("Gender is invalid!");
       return;
     }
-    if (!usPhoneNumberRegex.test(data.contact)) {
-      setError("Invalid Contact! Please follow US standard");
-      return;
-    }
+    // if (!usPhoneNumberRegex.test(data.contact)) {
+    //   setError("Invalid Contact! Please follow US standard");
+    //   return;
+    // }
     if (
       !moment(data.dob).isValid() ||
       moment(data.dob, "MM/DD/YYYY").isAfter(moment(), "day")
@@ -64,34 +75,30 @@ const PatientInput = () => {
     return data;
   };
 
-  const handleClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-
-    setOpen(false);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = await validateForm();
-    if (data)
-      axios.post("http://localhost:3000/patients", data).then((res) => {
-        setOpen(true);
-        setFormData({
-          firstName: "",
-          lastName: "",
-          dob: "",
-          address: "",
-          contact: "",
-        });
+    if (data) {
+      data.gender = genderOptions.find(
+        (gender) => gender.label === data.gender
+      ).value;
+      onSubmit(patient ? { id: patient?._id, ...data } : data);
+      setFormData({
+        firstName: "",
+        lastName: "",
+        dob: "",
+        gender: "",
+        email: "",
       });
+    }
   };
 
   return (
-    <div className="page-container">
-      <Typography variant="h4">Patient Information Form</Typography>  
-      <form className="form-container" onSubmit={handleSubmit}>
+    <div className="flex justify-center">
+      <form
+        className="form-container flex flex-col p-5 gap-4"
+        onSubmit={handleSubmit}
+      >
         <div>
           <TextField
             id="firstName"
@@ -132,49 +139,40 @@ const PatientInput = () => {
           />
         </div>
         <div>
-          <TextField
-            id="address"
-            label="Address"
-            type="text"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            required
-          />
+          <FormControl fullWidth>
+            <InputLabel id="gender-label">Gender</InputLabel>
+            <Select
+              labelId="gender-label"
+              id="gender"
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              required
+            >
+              {genderOptions.map((option) => (
+                <MenuItem key={option.value} value={option.label}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </div>
         <div>
           <TextField
-            id="contact"
-            label="Contact"
+            id="email"
+            label="Email"
             type="text"
-            name="contact"
-            value={formData.contact}
+            name="email"
+            value={formData.email}
             onChange={handleChange}
             required
           />
         </div>
         <div className="todo-errors">{error && <span>{error}</span>}</div>
-        <Button type="submit">Submit</Button>
+        <Button type="submit">{patient ? "Update" : "Submit"}</Button>
       </form>
-      <Snackbar
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-        message={message}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleClose}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-      />
     </div>
   );
 };
 
-export default PatientInput;
+export default PatientForm;

@@ -20,7 +20,6 @@ const exportedMethods = {
     email = validateEmail(email, "email");
     checkIsProperNumber(gender, "gender");
 
-
     const patientsCollection = await patients();
 
     const existingPatient = await patientsCollection.findOne({
@@ -40,8 +39,6 @@ const exportedMethods = {
       isEpilepsy: false,
       creationDate: moment().format(),
     };
-
-
 
     const newInsertInformation = await patientsCollection.insertOne(newPaitent);
 
@@ -80,7 +77,6 @@ const exportedMethods = {
 
     if (filterObject.email !== undefined)
       filterObject.email = validateEmail(filterObject.email, "email");
-
 
     const patientsCollection = await patients();
 
@@ -129,17 +125,19 @@ const exportedMethods = {
   async updatePatientInfo(id, updateObject) {
     id = validateId(id, "patient id");
     updateObject.firstName = checkIsProperString(
-      filterObject.firstName,
+      updateObject.firstName,
       "firstName"
     );
     updateObject.lastName = checkIsProperString(
-      filterObject.lastName,
+      updateObject.lastName,
       "lastName"
     );
-    updateObject.dob = checkIsProperString(filterObject.dob, "date of birth");
-    updateObject.dob = isDateValid(filterObject.dob, "date of birth");
-    updateObject.gender = checkIsProperNumber(filterObject.gender, "gender");
-    updateObject.email = validateEmail(filterObject.email);
+    updateObject.dob = checkIsProperString(updateObject.dob, "date of birth");
+    updateObject.dob = isDateValid(updateObject.dob, "date of birth");
+    checkIsProperNumber(updateObject.gender, "gender");
+    updateObject.email = validateEmail(updateObject.email);
+
+    updateObject.gender = mapGender[updateObject.gender];
 
     const patientsCollection = await patients();
 

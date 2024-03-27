@@ -6,29 +6,25 @@ export default {
       colors: {
         eh: {
           1: "#FFFFFF", // White
-          2: "#EAEAEA", // Light gray
-          3: "#D4D4D4", // Medium gray
-          4: "#333333", // Dark gray
-          5: "#000000", // Black
-          6: "#FFA07A", // Light salmon
-          7: "#FF7F50", // Coral
-          8: "#FF6347", // Tomato
-          9: "#FFD700", // Gold
-          10: "#FFDAB9", // Peach puff
-          11: "#FFA500", // Orange
-          12: "#FF8C00", // Dark orange
-          13: "#FF4500", // Orange red
-          14: "#ADD8E6", // Light blue
-          15: "#90EE90", // Light green
-          16: "#E6E6FA", // Lavender
-          17: "#708090", // Slate gray
-          18: "#2F4F4F", // Dark slate gray
-          19: "#00BFFF", // Deep sky blue
-          20: "#00CED1", // Dark turquoise
-          21: "#EEE8AA", // Pale goldenrod
-          22: "#B0C4DE", // Light steel blue
-          23: "#BC8F8F", // Rosy brown
+          2: "#EDE7F6", // Lavender
+          3: "#D1C4E9", // Light Purple
+          4: "#B39DDB", // Purple
+          5: "#7E57C2", // Deep Purple
+          6: "#2196F3", // Blue
+          7: "#03A9F4", // Light Blue
+          8: "#80DEEA", // Cyan
+          9: "#4DB6AC", // Teal
+          10: "#388E3C", // Green
+          11: "#CDDC39", // Lime
+          12: "#FFEB3B", // Yellow
+          13: "#FFC107", // Amber
+          14: "#FF5722", // Deep Orange
+          15: "#F44336", // Red
         },
+      },
+      fontFamily: {
+        crete: "var(--font-crete-round) !important",
+        lora: "var(--font-lora) !important",
       },
     },
   },

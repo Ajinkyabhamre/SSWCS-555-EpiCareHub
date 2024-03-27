@@ -6,9 +6,14 @@ async function fetchUsersData() {
     const usersCollection = await users();
 
     // Fetch data from the collection
-    const userData = await usersCollection.find({}, { projection: { firstName: 1, lastName: 1, username:1, email: 1 } }).toArray();
+    const userData = await usersCollection
+      .find(
+        {},
+        { projection: { firstName: 1, lastName: 1, username: 1, email: 1 } }
+      )
+      .toArray();
     //return userData; // Return the fetched user data
-    console.log("Data fetched successfully:", userData);
+    // console.log("Data fetched successfully:", userData);
   } catch (error) {
     console.error("Error occurred while fetching data:", error);
   }

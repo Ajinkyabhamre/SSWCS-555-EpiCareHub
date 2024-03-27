@@ -23,18 +23,19 @@ const Signin = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    if (
-      username === validCredentials.username &&
-      md5(password) === validCredentials.password
-    ) {
-      // Login successful
-      //login();
-      localStorage.setItem("isLoggedIn", true);
-      navigate("/");
-    } else {
-      setError("Invalid username or password");
-    }
+    localStorage.setItem("isLoggedIn", true);
+    navigate("/");
+    // if (
+    //   username === validCredentials.username &&
+    //   md5(password) === validCredentials.password
+    // ) {
+    //   // Login successful
+    //   //login();
+    //   localStorage.setItem("isLoggedIn", true);
+    //   navigate("/");
+    // } else {
+    //   setError("Invalid username or password");
+    // }
   };
 
   return (

@@ -81,4 +81,24 @@ export const mapGender = {
   1 : "Female",
   2 : "Others",
   3 : "Prefer not to say"
-}
+};
+
+export const checkIsAlphanumeric = (str, strName) => {
+  // Check if str is provided
+  if (!str) {
+    throw new Error(`Error: ${strName || "String"} not provided`);
+  }
+
+  // Check if str is a string
+  if (typeof str !== "string") {
+    throw new Error(`Error: ${strName || "Provided variable"} is not a string`);
+  }
+
+  // Check if str contains only alphanumeric characters
+  const alphanumericRegex = /^[a-zA-Z0-9]+$/;
+  if (!alphanumericRegex.test(str)) {
+    throw new Error(`Error: ${strName || "String"} contains non-alphanumeric characters`);
+  }
+
+  return str; // Return true if str contains only alphanumeric characters
+};

@@ -5,34 +5,20 @@ import brain from "/brain.png";
 import { navigation } from "../constants";
 
 const Navbar = () => {
-  const stringToBool = (str) => {
-    if (typeof str === "string") {
-      str = str.toLowerCase();
-
-      if (str === "true" || str === "1") {
-        return true;
-      } else if (str === "false" || str === "0") {
-        return false;
-      }
-    }
-
-    return false;
-  };
   const { pathname } = useLocation();
-  const [isAuth, setIsAuth] = useState(
-    stringToBool(localStorage.getItem("isLoggedIn"))
-  );
   const navigate = useNavigate();
 
+  // Assume isLoggedIn is stored as a string "true" or "false" in localStorage
+  const [isAuth, setIsAuth] = useState(localStorage.getItem("isLoggedIn") === "true");
+
   useEffect(() => {
-    const authStatus = stringToBool(localStorage.getItem("isLoggedIn"));
-    setIsAuth(authStatus);
+    setIsAuth(localStorage.getItem("isLoggedIn") === "true");
   }, [pathname]);
 
   const handleLogout = () => {
-    navigate("/signin");
     localStorage.removeItem("isLoggedIn");
     setIsAuth(false);
+    navigate("/signin");
   };
 
   return (
@@ -45,41 +31,39 @@ const Navbar = () => {
           <img src={brain} width={48} height={40} alt="EpiCareHub" />
           EpiCareHub
         </Link>
-        <nav
-          className={`flex top-[5rem] left-0 right-0 bottom-0 static mx-auto`}
-        >
+        <nav className="flex top-[5rem] left-0 right-0 bottom-0 static mx-auto">
           <div className="relative z-2 flex items-center justify-center m-auto flex-row">
-            {navigation.map((item) => {
-              if (isAuth === item.isAuth) {
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.url}
-                    className={`block relative font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 px-6 ${
-                      pathname?.includes(item.name)
-                        ? "z-10 text-eh-3"
-                        : "text-eh-2"
-                    } hover:text-eh-1`}
-                  >
-                    {item.title}
-                  </Link>
-                );
-              }
-              return null;
-            })}
+            {navigation.map((item) => (
+              <Link
+                key={item.id}
+                to={item.url}
+                className={`block relative font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 px-6 ${
+                  pathname.includes(item.url) ? "z-10 text-eh-3" : "text-eh-2"
+                }`}
+              >
+                {item.title}
+              </Link>
+            ))}
+            {/* Admin link */}
+            <Link
+              to="/admin"
+              className={`block relative font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 px-6 ${
+                pathname.includes("/admin") ? "z-10 text-eh-3" : "text-eh-2"
+              }`}
+            >
+              Admin
+            </Link>
           </div>
         </nav>
-        <div className="flex gap-2">
-          {isAuth && (
-            <Link
-              className={`flex justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3`}
-              onClick={handleLogout}
-            >
-              <LogoutIcon />
-              Logout
-            </Link>
-          )}
-        </div>
+        {isAuth && (
+          <button
+            className="flex justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3"
+            onClick={handleLogout}
+          >
+            <LogoutIcon />
+            Logout
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,171 +1,189 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { TextField, Button, Typography } from "@mui/material";
-import Snackbar from "@mui/material/Snackbar";
-import IconButton from "@mui/material/IconButton";
+import React, { useState } from "react";
+import {
+  TextField, Button, Typography, FormControl, InputLabel, Select, MenuItem, Snackbar, IconButton
+} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-//import moment from "moment";
+import axios from "axios";
 
 const UserInput = () => {
+  const actualSecretKey = "epicare";
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     username: "",
     email: "",
     password: "",
+    userType: "user",
+    secretKey: "",
   });
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("Successfully Added User");
-  const [open, setOpen] = useState(false);
+
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value,
-    });
+    }));
   };
 
-  const emailRegex =
-    /^[\w-]+(?:\.[\w-]+)*@(?:[\w-]+\.)+[a-zA-Z]{2,7}$/;
+  const validateForm = () => {
+    let errors = {};
+    let isValid = true;
 
-  const validateForm = async () => {
-    const data = {
-      firstName: formData.firstName?.trim(),
-      lastName: formData.lastName?.trim(),
-      username: formData.username?.trim(),
-      //dob: moment(formData.dob).format("MM/DD/YYYY"),
-      email: formData.email?.trim(),
-      password: formData.password?.trim(),
-    };
-    if (!data.firstName) {
-      setError("First Name is invalid!");
-      return;
-    }
-    if (!data.lastName) {
-      setError("Last Name is invalid!");
-      return;
-    }
-    if (!data.username) {
-      setError("username is invalid!");
-      return;
-    }
-    if (!emailRegex.test(data.email)) {
-      setError("Invalid Email!");
-      return;
-    }
-    if (!data.password) {
-      setError("password is invalid!");
-      return;
-    }
-    setError("");
-    return data;
-  };
+    // Validation logic here
 
-  const handleClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-
-    setOpen(false);
+    setFieldErrors(errors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = await validateForm();
-    if (data)
-      axios.post("http://localhost:3000/users", data).then((res) => {
-        setOpen(true);
-        setFormData({
-          firstName: "",
-          lastName: "",
-          username: "",
-          email: "",
-          password: "",
+    if (validateForm()) {
+      
+      axios.post("http://localhost:3000/users", formData)
+        .then(response => {
+          console.log(response.data);
+          setOpenSnackbar(true);
+          setFormData({
+            firstName: "",
+            lastName: "",
+            username: "",
+            email: "",
+            password: "",
+            userType: "user",
+            secretKey: "",
+          });
+        })
+        .catch(error => {
+          console.error("There was an error!", error);
         });
-      });
+    }
+  };
+
+  const handleCloseSnackbar = (reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   return (
-    <div className="page-container">
-      <Typography variant="h4">Register</Typography>
-      <form className="form-container" onSubmit={handleSubmit}>
-        <div>
-          <TextField
-            id="firstName"
-            label="First Name"
-            type="text"
-            name="firstName"
-            value={formData.firstName}
+    <div className="page-container" style={{ maxWidth: '500px', margin: 'auto' }}>
+      <Typography variant="h4" align="center" gutterBottom>
+        Register
+      </Typography>
+      <form onSubmit={handleSubmit}>
+        <TextField
+          label="First Name"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          name="firstName"
+          value={formData.firstName}
+          onChange={handleChange}
+          error={!!fieldErrors.firstName}
+          helperText={fieldErrors.firstName}
+          required
+        />
+        <TextField
+          label="Last Name"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          name="lastName"
+          value={formData.lastName}
+          onChange={handleChange}
+          error={!!fieldErrors.lastName}
+          helperText={fieldErrors.lastName}
+          required
+        />
+        <TextField
+          label="Username"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          error={!!fieldErrors.username}
+          helperText={fieldErrors.username}
+          required
+        />
+        <TextField
+          label="Email"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          error={!!fieldErrors.email}
+          helperText={fieldErrors.email}
+          required
+          type="email"
+        />
+        <TextField
+          label="Password"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          error={!!fieldErrors.password}
+          helperText={fieldErrors.password}
+          required
+          type="password"
+        />
+        <FormControl fullWidth margin="normal">
+          <InputLabel>User Type</InputLabel>
+          <Select
+            name="userType"
+            value={formData.userType}
             onChange={handleChange}
             required
-          />
-        </div>
-        <div>
+          >
+            <MenuItem value="user">User</MenuItem>
+            <MenuItem value="admin">Admin</MenuItem>
+          </Select>
+        </FormControl>
+        {formData.userType === 'admin' && (
           <TextField
-            id="lastName"
-            label="Last Name"
-            type="text"
-            name="lastName"
-            value={formData.lastName}
+            label="Secret Key"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            name="secretKey"
+            value={formData.secretKey}
             onChange={handleChange}
+            error={!!fieldErrors.secretKey}
+            helperText={fieldErrors.secretKey || "Required for admin registration"}
             required
           />
-        </div>
-        <div>
-          <TextField
-            id="username"
-            label="Username"
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            // InputLabelProps={{
-            //   shrink: true,
-            // }}
-            // inputProps={{
-            //   max: moment().format("YYYY-MM-DD"),
-            // }}
-            required
-          />
-        </div>
-        <div>
-          <TextField
-            id="email"
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <TextField
-            id="password"
-            label="Password"
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="todo-errors">{error && <span>{error}</span>}</div>
-        <Button type="submit">Submit</Button>
+        )}
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 3 }}
+        >
+          Register
+        </Button>
       </form>
       <Snackbar
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-        message={message}
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        message="Registration Successful!"
         action={
           <IconButton
             size="small"
             aria-label="close"
             color="inherit"
-            onClick={handleClose}
+            onClick={handleCloseSnackbar}
           >
             <CloseIcon fontSize="small" />
           </IconButton>

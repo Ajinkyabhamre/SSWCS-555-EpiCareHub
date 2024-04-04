@@ -6,70 +6,68 @@ import {
     checkIsAlphanumeric,
     validateEmail,
   } from "./helper.js";
-  import moment from "moment";
 
-const exportedMethods = {
-    async fetchAllUsersData() {
+const UserOperations = {
+  // Adding this helper function for removing the code duplication of usersCollection call reference
+  async getUsersCollection() {
+    return await users(); 
+  },
+
+  async fetchAllUsersData() {
+    try {
         // Obtain the users collection reference
-        const usersCollection = await users();
+        const usersCollection = await this.getUsersCollection();
+        const userData = await usersCollection.find({}, { projection: { firstName: 1, lastName: 1, username: 1, email: 1 } }).toArray();
+        return userData;
+    } catch (error) {
+        throw new Error("Failed to fetch user data.");
+    }
+  },
 
-        // Fetch data from the collection
-        const userData = await usersCollection
-        .find(
-            {},
-            { projection: { firstName: 1, lastName: 1, username: 1, email: 1 } }
-        )
-        .toArray();
-    return userData; // Return the fetched user data
-},
+  async removeUser(id) {
+    try {
+      id = validateId(id);
+      // Obtain the users collection reference
+      const usersCollection = await this.getUsersCollection();
 
-    async removeUser(id) {
-        id = validateId(id, "user id");
+      // Deleting the user record on the basis of id
+      const deletionInfo = await usersCollection.findOneAndDelete({
+      _id: ObjectId.createFromHexString(id),
+      });
 
-        const usersCollection = await users();
+      // Error handling for deleted user's record
+      if (!deletionInfo) {
+        throw new Error(`Could not delete user with id of ${id}`);
+      }
+      const { _id } = deletionInfo;
+      return { _id: _id, deleted: true };
+    } catch (error) {
+      throw new Error("Failed to remove user.");
+    }
+  },
 
-        const deletionInfo = await usersCollection.findOneAndDelete({
-        _id: ObjectId.createFromHexString(id),
-        });
+  async updateUserInfo(id, updateObject) {
+    try {
+      id = validateId(id);
+      updateObject.firstName = checkIsProperString(updateObject.firstName, "firstName");
+      updateObject.lastName = checkIsProperString(updateObject.lastName, "lastName");
+      updateObject.username = checkIsAlphanumeric(updateObject.username, "username");
+      updateObject.email = validateEmail(updateObject.email);
 
-        if (!deletionInfo) {
-            throw new Error(`Could not delete user with id of ${id}`);
-        }
+      // Obtain the users collection reference
+      const usersCollection = await this.getUsersCollection();
 
-        const { _id } = deletionInfo;
-        return { _id: _id, deleted: true };
-    },
+      // Update a user record on basis  of an object containing the fields to be updated.
+      const updateUser = await usersCollection.findOneAndUpdate(
+        { _id: ObjectId.createFromHexString(id) },
+        { $set: updateObject },
+        { returnDocument: "after" }
+      );
+      return updateUser;
+    } catch (error) {
+      throw new Error("Failed to update user info.");
+    }
+  },
+};
 
-    async updateUserInfo(id, updateObject) {
-        id = validateId(id, "user id");
-        updateObject.firstName = checkIsProperString(
-          updateObject.firstName,
-          "firstName"
-        );
-        updateObject.lastName = checkIsProperString(
-          updateObject.lastName,
-          "lastName"
-        );
-        
-        updateObject.username = checkIsAlphanumeric(updateObject.username, "username")
-        updateObject.email = validateEmail(updateObject.email);
-    
-        const usersCollection = await users();
-    
-        const updateUser = await usersCollection.findOneAndUpdate(
-          {
-            _id: ObjectId.createFromHexString(id),
-          },
-          {
-            $set: updateObject,
-          },
-          {
-            returnDocument: "after",
-          }
-        );
-    
-        return updateUser;
-      },
-    };
-
-    export default exportedMethods;
+export default UserOperations;

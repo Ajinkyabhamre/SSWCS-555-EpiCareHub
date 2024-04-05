@@ -1,4 +1,4 @@
-import exportedMethods from "../../data/usersDetails.js";
+import UserOperations from "../../data/usersDetails.js";
 
 describe("User Details Data Tests", () => {
 
@@ -33,24 +33,24 @@ describe("User Details Data Tests", () => {
         email: 'user5@gmail.com'
       }
     ];
-    const exportedMethods = {
+    const UserOperations = {
       fetchAllUsersData: async () => mockUsersData, // Manually mock the function
     };
   
-    const userData = await exportedMethods.fetchAllUsersData();
+    const userData = await UserOperations.fetchAllUsersData();
   
     expect(userData).toBeInstanceOf(Array);
     expect(userData).toHaveLength(mockUsersData.length);
     });
   
     test("fetchAllUsersData should handle errors", async () => {
-      const exportedMethods = {
+      const UserOperations = {
         fetchAllUsersData: async () => {
           throw new Error("Data retrieval error"); // Manually throw an error
         },
       };
     
-      await expect(exportedMethods.fetchAllUsersData()).rejects.toThrow(
+      await expect(UserOperations.fetchAllUsersData()).rejects.toThrow(
         "Data retrieval error"
       );
     });
@@ -66,7 +66,7 @@ describe("User Details Data Tests", () => {
       username: 'user5update',
       email: 'user5update@gmail.com' };
     
-      const exportedMethods = {
+      const UserOperations = {
         updateUserInfo: async (id, updateData) => {
           expect(id).toBe(userId);
           expect(updateData).toEqual(updateObject);
@@ -74,7 +74,7 @@ describe("User Details Data Tests", () => {
         },
       };
     
-      const updatedUser = await exportedMethods.updateUserInfo(userId, updateObject);
+      const updatedUser = await UserOperations.updateUserInfo(userId, updateObject);
     
       expect(updatedUser).toEqual(mockUpdatedUser);
     });
@@ -83,18 +83,18 @@ describe("User Details Data Tests", () => {
       const userId = '66005f1f4006d9c10362d5b4';
       const mockDeletionResult = "User deleted successfully";
     
-      const exportedMethods = {
+      const UserOperations = {
         removeUser: async (id) => {
           expect(id).toBe(userId);
           return mockDeletionResult;
         },
       };
     
-      const deletionResult = await exportedMethods.removeUser(userId);
+      const deletionResult = await UserOperations.removeUser(userId);
     
       expect(deletionResult).toBe(mockDeletionResult);
     });
-  
+
     test("removeUser should handle errors", async () => {
       const userId = '66005f1f4006d9c10362d5b4';
     

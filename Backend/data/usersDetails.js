@@ -7,7 +7,7 @@ import {
     validateEmail,
   } from "./helper.js";
 
-const UserOperations = {
+const exportedMethods = {
   // Adding this helper function for removing the code duplication of usersCollection call reference
   async getUsersCollection() {
     return await users(); 
@@ -70,4 +70,4 @@ const UserOperations = {
   },
 };
 
-export default UserOperations;
+export default exportedMethods;

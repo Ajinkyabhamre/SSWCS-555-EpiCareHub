@@ -14,10 +14,20 @@ const router = Router();
 router
   .route("/")
   .get(async (req, res) => {
-    return res.send("GET request to http://localhost:3000/usersDetails");
+    try {
+      const allUsers = await userDataFetch.fetchAllUsersData();
+      res.status(200).json(allUsers);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   })
   .delete(async (req, res) => {
-    return res.send("DELETE request to http://localhost:3000/usersDetails");
+    try {
+      const deletedUser = await userDataFetch.removeUser(req.params.id);
+      res.status(200).json(deletedUser);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
   })
   .put(async (req, res) => {
     try {

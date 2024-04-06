@@ -7,7 +7,19 @@ import {
   validateId,
   validateEmail,
   checkIsProperNumber,
-} from "../data/helper.js";
+} from "../data/helper.js"
+import multer from "multer";
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/"); // Store uploaded files in the 'uploads' directory
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname); // Use the original file name
+  },
+});
+
+const upload = multer({ storage: storage });
 
 router
   .route("/")
@@ -156,4 +168,30 @@ router.route("/get").post(async (req, res) => {
   }
 });
 
+router.route("/upload").post(async (req, res) => {
+ const patientId = req.body.patientId; // Get the patient ID from the request body
+
+ // Check if the patient ID is valid
+//  if (!validPatientIds.includes(patientId)) {
+//    return res.status(400).send("Invalid patient ID.");
+//  }
+
+ // If the patient ID is valid, use Multer to handle file upload
+ upload.single("file")(req, res, (err) => {
+   if (err) {
+     console.error("Error uploading file:", err);
+     return res.status(500).send("Error uploading file.");
+   }
+
+   const file = req.file;
+   if (!file) {
+     return res.status(400).send("No file uploaded.");
+   }
+
+   // Process the uploaded file as needed
+   console.log("File uploaded:", file.originalname);
+
+   res.send("File uploaded successfully.");
+ });
+});
 export default router;

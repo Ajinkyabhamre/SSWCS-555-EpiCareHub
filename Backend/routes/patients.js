@@ -10,23 +10,11 @@ import {
 } from "../data/helper.js";
 import multer from "multer";
 import { ObjectId } from "mongodb";
+import path from "path";
+import fs from "fs";
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "Uploads"); // Set destination folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, path.extname(file.originalname)); // Set file name
-  },
-});
+import axios from 'axios';
 
-// Initialize multer upload
-const upload = multer({
-  storage: storage,
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
-  },
-}).single("file");
 
 router
   .route("/")
@@ -183,31 +171,46 @@ router.route("/upload").post(async (req, res) => {
 
   patientId = validateId(patientId, "patient Id");
 
+  try {
+    const deletePaitent = await patientsData.getPaitentById(patientId);
+    //return res.status(200).json(deletePaitent);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+
+// let data = JSON.stringify({
+//   patientId: patientId,
+//   file: req.files.file,
+// });
+
+let myNewId = new ObjectId();
+
+try {
+  const formData = new FormData();
+  formData.append("file", req.files.file);
+  formData.append("myNewId", myNewId.toString());
+
+  const response = await axios.get(
+    "http://127.0.0.1:8000/visualize_brain",
+    formData,
+    {
+      headers: {  
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  res.json(response.data);
+} catch (error) {
+  console.error("Error forwarding data to FastAPI:", error);
+  res.status(500).json({ error: "Internal Server Error" });
+}
+
   // TODO:
   // 1. check patient Id
   // 2. push new objectId.toString() into array
   // 3.
 
-  const myNewId = new ObjectId();
-  upload(req, res, (err) => {
-    console.log(req);
-    if (err) {
-      res.status(400).json({ error: err });
-    } else {
-      // File uploaded successfully
-      // Now you can store the file location in the database or perform other operations
-      const fileLocation = path.join("Uploads", myNewId.toString(), "eegData");
-      // If 'Uploads/newObjectId' directory doesn't exist, create it
-      const dir = path.join("Uploads", myNewId.toString());
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-      }
-      // Move the file to the specified location
-      fs.renameSync(req.file.path, fileLocation);
-      res.json({ fileLocation: fileLocation });
-    }
-  });
-
-  return res.json(req.files.file.name);
+  // return res.json(req.files.file.name);
 });
 export default router;

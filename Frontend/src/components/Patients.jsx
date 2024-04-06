@@ -30,8 +30,21 @@ const Patients = () => {
 
   const handleFileSubmit = () => {
     if (selectedFile) {
-      navigate(`/patient/${selectedPatient._id}`);
-      setSelectedFile(null);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      axios
+        .post("/api/upload", formData)
+        .then((response) => {
+          console.log(response.data);
+          navigate(`/patient/${selectedPatient._id}`);
+          setSelectedFile(null);
+        })
+        .catch((error) => {
+          console.error("Error uploading file:", error);
+          setMessage("Error uploading file.");
+          setOpen(true);
+        });
     } else {
       setMessage("No file selected.");
       setOpen(true);
@@ -209,18 +222,18 @@ const Patients = () => {
               htmlFor="fileInput"
               className="block text-sm font-medium text-gray-700"
             >
-              Upload EDF/MAT File
+              Upload FIF File
             </label>
             <input
               id="fileInput"
               name="fileInput"
               type="file"
-              accept=".edf, .mat"
+              accept=".fif"
               onChange={handleFileChange}
-              className="mt-4 block w-full px-3 py-2 border border-eh-4 rounded-md shadow-sm focus:outline-none focus:ring-eh-3 focus:border-eh-3 sm:text-sm"
+              className="mt-2 block w-full px-3 py-2 border border-eh-4 rounded-md shadow-sm focus:outline-none focus:ring-eh-3 focus:border-eh-3 sm:text-sm"
             />
             <button
-              className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
+              className="bg-eh-4 mt-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
               type="button"
               onClick={handleFileSubmit}
             >

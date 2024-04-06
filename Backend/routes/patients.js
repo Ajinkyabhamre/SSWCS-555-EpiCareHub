@@ -9,17 +9,24 @@ import {
   checkIsProperNumber,
 } from "../data/helper.js";
 import multer from "multer";
+import { ObjectId } from "mongodb";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Store uploaded files in the 'uploads' directory
+    cb(null, "Uploads"); // Set destination folder
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname); // Use the original file name
+    cb(null, path.extname(file.originalname)); // Set file name
   },
 });
 
-const upload = multer({ storage: storage });
+// Initialize multer upload
+const upload = multer({
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    checkFileType(file, cb);
+  },
+}).single("file");
 
 router
   .route("/")
@@ -169,11 +176,38 @@ router.route("/get").post(async (req, res) => {
 });
 
 router.route("/upload").post(async (req, res) => {
-  const patientId = req.body.patientId; // Get the patient ID from the request body
+  let patientId = req.body.patientId; // Get the patient ID from the request body
   if (!req.files || Object.keys(req.files).length === 0) {
     return res.status(400).json({ error: "No Files were passed" });
   }
 
-  return res.json(req.files.File.name);
+  patientId = validateId(patientId, "patient Id");
+
+  // TODO:
+  // 1. check patient Id
+  // 2. push new objectId.toString() into array
+  // 3.
+
+  const myNewId = new ObjectId();
+  upload(req, res, (err) => {
+    console.log(req);
+    if (err) {
+      res.status(400).json({ error: err });
+    } else {
+      // File uploaded successfully
+      // Now you can store the file location in the database or perform other operations
+      const fileLocation = path.join("Uploads", myNewId.toString(), "eegData");
+      // If 'Uploads/newObjectId' directory doesn't exist, create it
+      const dir = path.join("Uploads", myNewId.toString());
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+      // Move the file to the specified location
+      fs.renameSync(req.file.path, fileLocation);
+      res.json({ fileLocation: fileLocation });
+    }
+  });
+
+  return res.json(req.files.file.name);
 });
 export default router;

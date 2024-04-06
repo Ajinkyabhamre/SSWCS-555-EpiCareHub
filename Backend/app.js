@@ -3,9 +3,12 @@ import cors from "cors";
 const app = express();
 import configRoutesFunction from "./routes/index.js";
 
+import fileUpload from "express-fileupload";
+
 import bodyParser from "body-parser";
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(fileUpload());
 app.use(bodyParser.json());
 app.use(cors({ origin: "*" }));
 

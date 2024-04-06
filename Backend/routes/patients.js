@@ -7,7 +7,7 @@ import {
   validateId,
   validateEmail,
   checkIsProperNumber,
-} from "../data/helper.js"
+} from "../data/helper.js";
 import multer from "multer";
 
 const storage = multer.diskStorage({
@@ -169,29 +169,11 @@ router.route("/get").post(async (req, res) => {
 });
 
 router.route("/upload").post(async (req, res) => {
- const patientId = req.body.patientId; // Get the patient ID from the request body
+  const patientId = req.body.patientId; // Get the patient ID from the request body
+  if (!req.files || Object.keys(req.files).length === 0) {
+    return res.status(400).json({ error: "No Files were passed" });
+  }
 
- // Check if the patient ID is valid
-//  if (!validPatientIds.includes(patientId)) {
-//    return res.status(400).send("Invalid patient ID.");
-//  }
-
- // If the patient ID is valid, use Multer to handle file upload
- upload.single("file")(req, res, (err) => {
-   if (err) {
-     console.error("Error uploading file:", err);
-     return res.status(500).send("Error uploading file.");
-   }
-
-   const file = req.file;
-   if (!file) {
-     return res.status(400).send("No file uploaded.");
-   }
-
-   // Process the uploaded file as needed
-   console.log("File uploaded:", file.originalname);
-
-   res.send("File uploaded successfully.");
- });
+  return res.json(req.files.File.name);
 });
 export default router;

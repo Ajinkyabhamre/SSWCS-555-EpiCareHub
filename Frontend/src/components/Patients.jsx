@@ -32,9 +32,10 @@ const Patients = () => {
     if (selectedFile) {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("patientId", selectedPatient._id);
 
       axios
-        .post("/api/upload", formData)
+        .post("http://localhost:3000/patients/upload", formData)
         .then((response) => {
           console.log(response.data);
           navigate(`/patient/${selectedPatient._id}`);

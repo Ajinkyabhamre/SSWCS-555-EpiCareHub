@@ -134,10 +134,11 @@ const exportedMethods = {
     );
     updateObject.dob = checkIsProperString(updateObject.dob, "date of birth");
     updateObject.dob = isDateValid(updateObject.dob, "date of birth");
-    checkIsProperNumber(updateObject.gender, "gender");
+    // checkIsProperNumber(updateObject.gender, "gender");
     updateObject.email = validateEmail(updateObject.email);
 
-    updateObject.gender = mapGender[updateObject.gender];
+    if (typeof updateObject.gender === "number")
+      updateObject.gender = mapGender[updateObject.gender];
 
     const patientsCollection = await patients();
 
@@ -158,6 +159,53 @@ const exportedMethods = {
     updatePatient.age = calulateAge(updatePatient.dob);
 
     return updatePatient;
+  },
+
+  async getPatientStats() {
+    const patientsCollection = await patients();
+    let patientsList = await patientsCollection.find({}).toArray();
+    if (!patientsList) throw new Error(`Internal Server Error`);
+    let res = {};
+    res.totalPatients = patientsList.length;
+    let total = 0;
+    let epilepseyCount = 0;
+
+    for (let i = 0; i < patientsList.length; i++) {
+      if (patientsList[i].eegVisuals) total += patientsList[i].eegVisuals.length;
+      if (patientsList[i].isEpilepsy) epilepseyCount++;
+    }
+    res.totatScans = total;
+    res.epilepsyPatient = epilepseyCount;
+    res.nonEpilepsyCount = patientsList.length - epilepseyCount;
+
+    res.ageGroups = {
+      "0 - 18": 0,
+      "19 - 35": 0,
+      "36 - 50": 0,
+      "51 - 65": 0,
+      "66+": 0,
+    };
+
+    patientsList = patientsList.map((object) => {
+      object.age = calulateAge(object.dob);
+      return object;
+    });
+
+    patientsList.forEach((patient) => {
+      if (patient.age >= 0 && patient.age <= 18) {
+        res.ageGroups["0 - 18"]++;
+      } else if (patient.age >= 19 && patient.age <= 35) {
+        res.ageGroups["19 - 35"]++;
+      } else if (patient.age >= 36 && patient.age <= 50) {
+        res.ageGroups["36 - 50"]++;
+      } else if (patient.age >= 51 && patient.age <= 65) {
+        res.ageGroups["51 - 65"]++;
+      } else {
+        res.ageGroups["66+"]++;
+      }
+    });
+
+  return res;
   },
 };
 

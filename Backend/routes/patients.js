@@ -7,6 +7,7 @@ import {
   validateId,
   validateEmail,
   checkIsProperNumber,
+  mapGender,
 } from "../data/helper.js";
 import multer from "multer";
 import { ObjectId } from "mongodb";
@@ -14,7 +15,7 @@ import path from "path";
 import fs from "fs";
 
 import axios from "axios";
-import { Readable } from "stream";
+import internal, { Readable } from "stream";
 
 router
   .route("/")
@@ -108,19 +109,28 @@ router
     return res.send("PATCH request to http://localhost:3000/paitents");
   });
 
+router.route("/statistics").get(async (req, res) => {
+  try {
+    const getAllStats = await patientsData.getPatientStats();
+    return res.json(getAllStats);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router
   .route("/:id")
   .get(async (req, res) => {
     try {
       req.params.id = validateId(req.params.id, "patient id");
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
     try {
       const deletePaitent = await patientsData.getPaitentById(req.params.id);
       return res.status(200).json(deletePaitent);
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
   })
   .put(async (req, res) => {})
@@ -152,36 +162,40 @@ router.route("/get").post(async (req, res) => {
     if (req.body.email !== undefined)
       req.body.email = validateEmail(req.body.email, "email");
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 
   try {
     const PatientsData = await patientsData.getAllPaitents(req.body);
     return res.json(PatientsData);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.route("/upload").post(async (req, res) => {
   let patientId = req.body.patientId; // Get the patient ID from the request body
 
-  patientId = validateId(patientId, "patient Id");
-
   try {
-    const deletePaitent = await patientsData.getPaitentById(patientId);
-    //return res.status(200).json(deletePaitent);
+    patientId = validateId(patientId, "patient Id");
   } catch (error) {
-    // res.status(404).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 
-  return res.json(req.body.uploadId);
+  try {
+    const getPatient = await patientsData.getPaitentById(patientId);
+    if (!getPatient.eegVisuals) getPatient.eegVisuals = [];
+    getPatient.eegVisuals.push(req.body.uploadId);
+    const { _id, ...allDetails } = getPatient;
 
-  // TODO:
-  // 1. check patient Id
-  // 2. push new objectId.toString() into array
-  // 3.
-
-  // return res.json(req.files.file.name);
+    const updatePatient = await patientsData.updatePatientInfo(
+      patientId,
+      allDetails
+    );
+    return res.status(200).send("Opertaion Succefull");
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
 });
+
 export default router;

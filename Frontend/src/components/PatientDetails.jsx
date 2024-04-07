@@ -47,7 +47,7 @@ const PatientDetails = () => {
         if (!response.data.success) {
           throw response.data.message || "Error";
         }
-        setPatient(response.data);
+        setPatient(response.data.patientUpdated);
       })
       .catch((error) => {})
       .finally(() => {});
@@ -61,17 +61,19 @@ const PatientDetails = () => {
             <span className="text-3xl font-bold mx-4">
               {patient.firstName} {patient.lastName}
             </span>
-            <button
-              className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
-              onClick={() => handleSubmit(patient)}
-            >
-              Mark Epilepsy
-            </button>
-            <div className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded w-fit">
-              <Link to={"/patients"}>Go Back to Patients List</Link>
+            <div className="flex gap-2">
+              <button
+                className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
+                onClick={() => handleSubmit(patient)}
+              >
+                Mark Epilepsy
+              </button>
+              <div className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded w-fit">
+                <Link to={"/patients"}>Go Back to Patients List</Link>
+              </div>
             </div>
           </div>
-          <div className="p-4 grid grid-cols-2 lg:grid-cols-5 gap-4 px-10">
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-10">
             <div
               className={`p-4 shadow-2xl rounded-lg flex flex-col justify-center text-white items-center ${
                 patient.isEpilepsy ? "bg-eh-15" : "bg-eh-10"
@@ -114,7 +116,7 @@ const PatientDetails = () => {
                 Latest Report
               </h2>
               <div className="border-b-2 border-gray-300 mb-4"></div>
-              <Brain />
+              {/* <Brain /> */}
             </div>
           </div>
         </>

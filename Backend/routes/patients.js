@@ -73,11 +73,11 @@ router
       req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
       req.body.dob = checkIsProperString(req.body.dob, "date of birth");
       req.body.dob = isDateValid(req.body.dob, "date of birth");
-      checkIsProperNumber(req.body.gender, "gender");
+      // checkIsProperNumber(req.body.gender, "gender");
       req.body.email = validateEmail(req.body.email);
     } catch (error) {
       const result = {
-        patientAdded: null,
+        patientUpdated: null,
         message: error.message,
         success: false,
       };
@@ -91,7 +91,7 @@ router
       );
 
       const result = {
-        patientAdded: updatePatient,
+        patientUpdated: updatePatient,
         message: "Patient updated succesfully",
         success: true,
       };

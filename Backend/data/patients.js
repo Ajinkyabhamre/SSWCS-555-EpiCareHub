@@ -122,23 +122,21 @@ const exportedMethods = {
     return { _id: _id, deleted: true };
   },
 
-  async updatePatientInfo(id, updateObject) {
+  async updatePatientInfo(id, data) {
     id = validateId(id, "patient id");
-    updateObject.firstName = checkIsProperString(
-      updateObject.firstName,
-      "firstName"
-    );
-    updateObject.lastName = checkIsProperString(
-      updateObject.lastName,
-      "lastName"
-    );
-    updateObject.dob = checkIsProperString(updateObject.dob, "date of birth");
-    updateObject.dob = isDateValid(updateObject.dob, "date of birth");
+    let updateObject = {};
+    updateObject.firstName = checkIsProperString(data.firstName, "firstName");
+    updateObject.lastName = checkIsProperString(data.lastName, "lastName");
+    updateObject.dob = checkIsProperString(data.dob, "date of birth");
+    updateObject.dob = isDateValid(data.dob, "date of birth");
     // checkIsProperNumber(updateObject.gender, "gender");
-    updateObject.email = validateEmail(updateObject.email);
+    updateObject.email = validateEmail(data.email);
+    updateObject.isEpilepsy = data.isEpilepsy;
+    updateObject.eegVisuals = data.eegVisuals;
 
-    if (typeof updateObject.gender === "number")
-      updateObject.gender = mapGender[updateObject.gender];
+    if (typeof data.gender === "number")
+      updateObject.gender = mapGender[data.gender];
+    else updateObject.gender = data.gender;
 
     const patientsCollection = await patients();
 
@@ -171,7 +169,8 @@ const exportedMethods = {
     let epilepseyCount = 0;
 
     for (let i = 0; i < patientsList.length; i++) {
-      if (patientsList[i].eegVisuals) total += patientsList[i].eegVisuals.length;
+      if (patientsList[i].eegVisuals)
+        total += patientsList[i].eegVisuals.length;
       if (patientsList[i].isEpilepsy) epilepseyCount++;
     }
     res.totatScans = total;
@@ -205,7 +204,7 @@ const exportedMethods = {
       }
     });
 
-  return res;
+    return res;
   },
 };
 

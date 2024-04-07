@@ -35,7 +35,7 @@ const Patients = () => {
       formData.append("patientId", selectedPatient._id);
 
       axios
-        .post("http://localhost:3000/patients/upload", formData)
+        .post("http://127.0.0.1:8000/visualize_brain", formData)
         .then((response) => {
           console.log(response.data);
           navigate(`/patient/${selectedPatient._id}`);

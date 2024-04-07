@@ -13,8 +13,8 @@ import { ObjectId } from "mongodb";
 import path from "path";
 import fs from "fs";
 
-import axios from 'axios';
-
+import axios from "axios";
+import { Readable } from "stream";
 
 router
   .route("/")
@@ -165,9 +165,6 @@ router.route("/get").post(async (req, res) => {
 
 router.route("/upload").post(async (req, res) => {
   let patientId = req.body.patientId; // Get the patient ID from the request body
-  if (!req.files || Object.keys(req.files).length === 0) {
-    return res.status(400).json({ error: "No Files were passed" });
-  }
 
   patientId = validateId(patientId, "patient Id");
 
@@ -175,36 +172,10 @@ router.route("/upload").post(async (req, res) => {
     const deletePaitent = await patientsData.getPaitentById(patientId);
     //return res.status(200).json(deletePaitent);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    // res.status(404).json({ error: error.message });
   }
 
-// let data = JSON.stringify({
-//   patientId: patientId,
-//   file: req.files.file,
-// });
-
-let myNewId = new ObjectId();
-
-try {
-  const formData = new FormData();
-  formData.append("file", req.files.file);
-  formData.append("myNewId", myNewId.toString());
-
-  const response = await axios.get(
-    "http://127.0.0.1:8000/visualize_brain",
-    formData,
-    {
-      headers: {  
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-
-  res.json(response.data);
-} catch (error) {
-  console.error("Error forwarding data to FastAPI:", error);
-  res.status(500).json({ error: "Internal Server Error" });
-}
+  return res.json(req.body.uploadId);
 
   // TODO:
   // 1. check patient Id

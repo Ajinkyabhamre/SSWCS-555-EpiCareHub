@@ -9,6 +9,8 @@ import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import axios from "axios";
 import PatientForm from "./PatientForm";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { selectUpload } from "../features/patientSlice";
 
 const Patients = () => {
   const [data, setData] = useState([]);
@@ -16,12 +18,15 @@ const Patients = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [visual, setVisual] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isFile, setIsFile] = useState(false);
   const [message, setMessage] = useState("Successfully Added Patient");
   const [open, setOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
+
+  const dispatch = useDispatch();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -33,11 +38,11 @@ const Patients = () => {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("patientId", selectedPatient._id);
-
+      setVisual(true);
       axios
         .post("http://127.0.0.1:8000/visualize_brain", formData)
         .then((response) => {
-          console.log(response.data);
+          dispatch(selectUpload(response.data.data.uploadId));
           navigate(`/patient/${selectedPatient._id}`);
           setSelectedFile(null);
         })
@@ -45,6 +50,9 @@ const Patients = () => {
           console.error("Error uploading file:", error);
           setMessage("Error uploading file.");
           setOpen(true);
+        })
+        .finally(() => {
+          setVisual(false);
         });
     } else {
       setMessage("No file selected.");
@@ -178,6 +186,16 @@ const Patients = () => {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="w-12 h-12 border-t-4 border-r-4 border-b-4 border-l-4 border-gray-900 animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (visual) {
+    return (
+      <div className="flex justify-center items-center flex-col overflow-hidden font-crete mt-32">
+        <h2>Visualizing Brain... </h2>
+        <h2>Do not refresh or close the browser!</h2>
+        <h2>Close windows to continue further</h2>
       </div>
     );
   }

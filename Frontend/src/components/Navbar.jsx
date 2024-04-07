@@ -9,7 +9,9 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   // Assume isLoggedIn is stored as a string "true" or "false" in localStorage
-  const [isAuth, setIsAuth] = useState(localStorage.getItem("isLoggedIn") === "true");
+  const [isAuth, setIsAuth] = useState(
+    localStorage.getItem("isLoggedIn") === "true"
+  );
 
   useEffect(() => {
     setIsAuth(localStorage.getItem("isLoggedIn") === "true");
@@ -23,7 +25,7 @@ const Navbar = () => {
 
   return (
     <div className="static w-full top-0 bg-eh-1 z-50 font-crete">
-      <div className="flex items-center px-5 py-5">
+      <div className="flex items-center px-7 py-4">
         <Link
           className="flex justify-center items-center font-oswald w-[12rem] text-eh-2 font-medium text-2xl hover:text-eh-3"
           to="/"

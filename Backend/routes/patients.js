@@ -14,6 +14,8 @@ import { ObjectId } from "mongodb";
 import path from "path";
 import fs from "fs";
 
+import moment from "moment";
+
 import axios from "axios";
 import internal, { Readable } from "stream";
 
@@ -73,8 +75,8 @@ router
       req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
       req.body.dob = checkIsProperString(req.body.dob, "date of birth");
       req.body.dob = isDateValid(req.body.dob, "date of birth");
-      // checkIsProperNumber(req.body.gender, "gender");
       req.body.email = validateEmail(req.body.email);
+      if(req.body.comments) req.body.comments = checkIsProperString(req.body.comments,"comment");
     } catch (error) {
       const result = {
         patientUpdated: null,
@@ -174,7 +176,8 @@ router.route("/get").post(async (req, res) => {
 });
 
 router.route("/upload").post(async (req, res) => {
-  let patientId = req.body.patientId; // Get the patient ID from the request body
+  // let patientId = req.body.patientId;
+  let { patientId, ...newEEGObject } = req.body; // Get the patient ID from the request body
 
   try {
     patientId = validateId(patientId, "patient Id");
@@ -185,7 +188,8 @@ router.route("/upload").post(async (req, res) => {
   try {
     const getPatient = await patientsData.getPaitentById(patientId);
     if (!getPatient.eegVisuals) getPatient.eegVisuals = [];
-    getPatient.eegVisuals.push(req.body.uploadId);
+    newEEGObject.uploadDate = moment().format("MM/DD/YYYY");
+    getPatient.eegVisuals.push(newEEGObject);
     const { _id, ...allDetails } = getPatient;
 
     const updatePatient = await patientsData.updatePatientInfo(

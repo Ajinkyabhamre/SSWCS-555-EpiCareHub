@@ -134,6 +134,8 @@ const exportedMethods = {
     updateObject.isEpilepsy = data.isEpilepsy;
     updateObject.eegVisuals = data.eegVisuals;
 
+    if(data.comments) updateObject.comments = data.comments;
+
     if (typeof data.gender === "number")
       updateObject.gender = mapGender[data.gender];
     else updateObject.gender = data.gender;

@@ -232,6 +232,10 @@ const exportedMethods = {
       ([date, count]) => ({ date, value: count })
     );
 
+    res.ageGroupsData = Object.entries(res.ageGroups).map(
+      ([ageGroup, number]) => ({ageGroup, number})
+    );
+
     return res;
   },
 };

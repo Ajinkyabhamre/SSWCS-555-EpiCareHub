@@ -1,65 +1,5 @@
-/*import axios from "axios";
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-
-const AdminPage = () => {
-  const { id } = useParams();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axios.get(`http://localhost:3000/usersDetails/`);
-        setUser(response.data);
-        console.log(response.data)
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  return (
-    <div className="bg-gray-200 h-full p-4 grid grid-cols-1 lg:grid-cols-2 overflow-hidden w-full mx-auto gap-4">
-      {user && (
-        <div className="p-4 bg-white shadow-md rounded-lg">
-          <h2 className="text-2xl font-bold mb-2 text-gray-800">
-            User Details
-          </h2>
-          <div className="border-b-2 border-gray-300 mb-4"></div>
-          <div className="flex flex-col space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-600">First Name:</span>
-              <span className="text-blue-600">{user.firstName}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-600">Last Name:</span>
-              <span className="text-blue-600">{user.lastName}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-600">Email:</span>
-              <span className="text-blue-600">{user.email}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-600">Username:</span>
-              <span className="text-blue-600">{user.username}</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default AdminPage;
-*/
-
-
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from "react-router-dom";
 import {
   Table, TableHead, TableRow, TableCell, TableBody,
   Button, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -80,28 +20,8 @@ const AdminPage = () => {
         console.error('There was an error fetching the users:', error);
       }
     };
-
     fetchUsers();
   }, []);
-
-  const handleUserDelete = async (id) => {
-    try {
-      await axios.delete(`http://localhost:3000/usersDetails/${id}`);
-      setUsers(users.filter((user) => user._id !== id)); // Optimistically remove the user from UI
-    } catch (error) {
-      console.error('There was an error deleting the user:', error);
-    }
-  };
-
-  const handleUserUpdate = async () => {
-    try {
-      await axios.put(`http://localhost:3000/usersDetails/${selectedUser._id}`, selectedUser);
-      setUsers(users.map(user => user._id === selectedUser._id ? selectedUser : user)); // Optimistically update the user in UI
-      handleDialogClose();
-    } catch (error) {
-      console.error('There was an error updating the user:', error);
-    }
-  };
 
   const handleDialogOpen = (user) => {
     setSelectedUser(user);
@@ -110,7 +30,30 @@ const AdminPage = () => {
 
   const handleDialogClose = () => {
     setOpenDialog(false);
-    setSelectedUser({});
+  };
+
+  const handleUserDelete = async (id) => {
+    try {
+      await axios.delete(`http://localhost:3000/usersDetails/${id}`);
+      setUsers(users.filter((user) => user._id !== id));
+    } catch (error) {
+      console.error('There was an error deleting the user:', error);
+    }
+  };
+
+  const handleUserUpdate = async () => {
+    try {
+      console.log('Attempting to update user with data:', selectedUser);
+      const response = await axios.put(`http://localhost:3000/usersDetails/${selectedUser._id}`, selectedUser);
+      console.log('Update response:', response.data);
+
+      if (response.data) {
+        setUsers(users.map(user => user._id === selectedUser._id ? { ...user, ...selectedUser } : user));
+        setOpenDialog(false);
+      }
+    } catch (error) {
+      console.error('There was an error updating the user:', error);
+    }
   };
 
   const handleChange = (e) => {
@@ -144,7 +87,57 @@ const AdminPage = () => {
           ))}
         </TableBody>
       </Table>
-      {/* Dialog and other UI elements */}
+
+      <Dialog open={openDialog} onClose={handleDialogClose}>
+        <DialogTitle>Edit User</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            name="firstName"
+            label="First Name"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={selectedUser.firstName}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="lastName"
+            label="Last Name"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={selectedUser.lastName}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="email"
+            label="Email Address"
+            type="email"
+            fullWidth
+            variant="standard"
+            value={selectedUser.email}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="username"
+            label="Username"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={selectedUser.username}
+            onChange={handleChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>Cancel</Button>
+          <Button onClick={handleUserUpdate}>Save</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

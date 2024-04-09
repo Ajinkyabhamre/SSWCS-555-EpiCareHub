@@ -134,7 +134,7 @@ const exportedMethods = {
     updateObject.isEpilepsy = data.isEpilepsy;
     updateObject.eegVisuals = data.eegVisuals;
 
-    if(data.comments) updateObject.comments = data.comments;
+    if (data.comments) updateObject.comments = data.comments;
 
     if (typeof data.gender === "number")
       updateObject.gender = mapGender[data.gender];
@@ -169,10 +169,20 @@ const exportedMethods = {
     res.totalPatients = patientsList.length;
     let total = 0;
     let epilepseyCount = 0;
+    let createdDateData = {};
+    let uploadDateData = {};
 
     for (let i = 0; i < patientsList.length; i++) {
-      if (patientsList[i].eegVisuals)
+      if (patientsList[i].eegVisuals) {
+        for (let upload of patientsList[i].eegVisuals) {
+          if (upload.uploadDate in uploadDateData) {
+            uploadDateData[upload.uploadDate]++;
+          } else {
+            uploadDateData[upload.uploadDate] = 1;
+          }
+        }
         total += patientsList[i].eegVisuals.length;
+      }
       if (patientsList[i].isEpilepsy) epilepseyCount++;
     }
     res.totatScans = total;
@@ -204,7 +214,23 @@ const exportedMethods = {
       } else {
         res.ageGroups["66+"]++;
       }
+
+      let creationDate = moment(patient.creationDate).format("MM/DD/YYYY");
+
+      if (creationDate in createdDateData) {
+        createdDateData[creationDate]++;
+      } else {
+        createdDateData[creationDate] = 1;
+      }
     });
+
+    res.createdDateWiseData = Object.entries(createdDateData).map(
+      ([date, count]) => ({ date, value: count })
+    );
+
+    res.uploadScansDateWiseData = Object.entries(uploadDateData).map(
+      ([date, count]) => ({ date, value: count })
+    );
 
     return res;
   },

@@ -7,7 +7,17 @@ import {
   validateId,
   validateEmail,
   checkIsProperNumber,
+  mapGender,
 } from "../data/helper.js";
+import multer from "multer";
+import { ObjectId } from "mongodb";
+import path from "path";
+import fs from "fs";
+
+import moment from "moment";
+
+import axios from "axios";
+import internal, { Readable } from "stream";
 
 router
   .route("/")
@@ -65,11 +75,11 @@ router
       req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
       req.body.dob = checkIsProperString(req.body.dob, "date of birth");
       req.body.dob = isDateValid(req.body.dob, "date of birth");
-      checkIsProperNumber(req.body.gender, "gender");
       req.body.email = validateEmail(req.body.email);
+      if(req.body.comments) req.body.comments = checkIsProperString(req.body.comments,"comment");
     } catch (error) {
       const result = {
-        patientAdded: null,
+        patientUpdated: null,
         message: error.message,
         success: false,
       };
@@ -83,7 +93,7 @@ router
       );
 
       const result = {
-        patientAdded: updatePatient,
+        patientUpdated: updatePatient,
         message: "Patient updated succesfully",
         success: true,
       };
@@ -101,19 +111,28 @@ router
     return res.send("PATCH request to http://localhost:3000/paitents");
   });
 
+router.route("/statistics").get(async (req, res) => {
+  try {
+    const getAllStats = await patientsData.getPatientStats();
+    return res.json(getAllStats);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router
   .route("/:id")
   .get(async (req, res) => {
     try {
       req.params.id = validateId(req.params.id, "patient id");
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
     try {
       const deletePaitent = await patientsData.getPaitentById(req.params.id);
       return res.status(200).json(deletePaitent);
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
   })
   .put(async (req, res) => {})
@@ -145,14 +164,41 @@ router.route("/get").post(async (req, res) => {
     if (req.body.email !== undefined)
       req.body.email = validateEmail(req.body.email, "email");
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 
   try {
     const PatientsData = await patientsData.getAllPaitents(req.body);
     return res.json(PatientsData);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.route("/upload").post(async (req, res) => {
+  // let patientId = req.body.patientId;
+  let { patientId, ...newEEGObject } = req.body; // Get the patient ID from the request body
+
+  try {
+    patientId = validateId(patientId, "patient Id");
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+
+  try {
+    const getPatient = await patientsData.getPaitentById(patientId);
+    if (!getPatient.eegVisuals) getPatient.eegVisuals = [];
+    newEEGObject.uploadDate = moment().format("MM/DD/YYYY");
+    getPatient.eegVisuals.push(newEEGObject);
+    const { _id, ...allDetails } = getPatient;
+
+    const updatePatient = await patientsData.updatePatientInfo(
+      patientId,
+      allDetails
+    );
+    return res.status(200).send("Opertaion Succefull");
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
 });
 

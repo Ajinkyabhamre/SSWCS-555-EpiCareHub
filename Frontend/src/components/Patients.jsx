@@ -9,6 +9,9 @@ import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import axios from "axios";
 import PatientForm from "./PatientForm";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { selectUpload, clearUpload } from "../features/patientSlice";
+import FilePresentIcon from "@mui/icons-material/FilePresent";
 
 const Patients = () => {
   const [data, setData] = useState([]);
@@ -16,12 +19,15 @@ const Patients = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [visual, setVisual] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isFile, setIsFile] = useState(false);
   const [message, setMessage] = useState("Successfully Added Patient");
   const [open, setOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
+
+  const dispatch = useDispatch();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -30,8 +36,25 @@ const Patients = () => {
 
   const handleFileSubmit = () => {
     if (selectedFile) {
-      navigate(`/patient/${selectedPatient._id}`);
-      setSelectedFile(null);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("patientId", selectedPatient._id);
+      setVisual(true);
+      axios
+        .post("http://127.0.0.1:8000/visualize_brain", formData)
+        .then((response) => {
+          dispatch(selectUpload(response.data.data.uploadId));
+          navigate(`/patient/${selectedPatient._id}`);
+          setSelectedFile(null);
+        })
+        .catch((error) => {
+          console.error("Error uploading file:", error);
+          setMessage("Error uploading file.");
+          setOpen(true);
+        })
+        .finally(() => {
+          setVisual(false);
+        });
     } else {
       setMessage("No file selected.");
       setOpen(true);
@@ -72,6 +95,17 @@ const Patients = () => {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  const handleFileDrop = (event) => {
+    event.preventDefault();
+    event.target.files = event.dataTransfer.files;
+
+    handleFileChange(event);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
   };
 
   const handleSubmit = useCallback(
@@ -157,6 +191,7 @@ const Patients = () => {
   }, []);
 
   useEffect(() => {
+    dispatch(clearUpload());
     fetchData();
   }, []);
 
@@ -164,6 +199,26 @@ const Patients = () => {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="w-12 h-12 border-t-4 border-r-4 border-b-4 border-l-4 border-gray-900 animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (visual) {
+    return (
+      <div className="flex justify-center items-center flex-col overflow-hidden font-crete mt-32 bg-eh-4">
+        <h2 className="text-3xl text-center text-white mb-4">
+          Visualizing EEG Data
+        </h2>
+        <p className="text-xl text-center text-white">
+          Please wait while we analyze and visualize the brain activity...
+        </p>
+        <p className="text-xl text-center text-white mb-4">
+          Do not close or refresh the browser
+        </p>
+        <div className="spinner mb-8"></div>
+        {/* <button className="bg-eh-4 text-white px-4 py-2 rounded-lg hover:bg-opacity-80">
+          Cancel Visualization
+        </button> */}
       </div>
     );
   }
@@ -201,30 +256,48 @@ const Patients = () => {
             : "Add Patient"
         }
         visible={visible}
-        onHide={() => setVisible(false)}
+        onHide={() => {
+          setVisible(false);
+          setSelectedFile(null);
+        }}
       >
         {isFile ? (
-          <div className="mt-4">
-            <label
-              htmlFor="fileInput"
-              className="block text-sm font-medium text-gray-700"
+          <div className="relative flex flex-col items-center">
+            <div
+              className="mt-2 border cursor-pointer border-eh-4 rounded-md shadow-sm focus:outline-none focus:border-eh-3 focus:ring-eh-3 relative overflow-hidden"
+              id="fileDropArea"
+              onDrop={handleFileDrop}
+              onDragOver={handleDragOver}
             >
-              Upload EDF/MAT File
-            </label>
-            <input
-              id="fileInput"
-              name="fileInput"
-              type="file"
-              accept=".edf, .mat"
-              onChange={handleFileChange}
-              className="mt-4 block w-full px-3 py-2 border border-eh-4 rounded-md shadow-sm focus:outline-none focus:ring-eh-3 focus:border-eh-3 sm:text-sm"
-            />
+              <p className="text-center bg-gradient-to-r from-eh-3 to-eh-4 py-8 px-4 text-white">
+                Drag and drop your FIF file here, or click to browse
+              </p>
+              <input
+                id="fileInput"
+                name="fileInput"
+                type="file"
+                accept=".fif"
+                onChange={handleFileChange}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full"
+              />
+            </div>
+            {selectedFile && (
+              <div className="mt-4 border flex items-center justify-center border-gray-300 rounded-md p-4 bg-gray-100">
+                <p className="text-sm text-gray-700 mr-2">Selected File:</p>
+                <div className="flex items-center">
+                  <FilePresentIcon className="w-5 h-5 mr-1 text-eh-4" />
+                  <p className="text-sm text-gray-900">{selectedFile.name}</p>
+                </div>
+              </div>
+            )}
+
             <button
-              className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
+              className="bg-eh-4 mt-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 disabled:cursor-not-allowed"
               type="button"
               onClick={handleFileSubmit}
+              disabled={!selectedFile}
             >
-              Submit File
+              Upload File
             </button>
           </div>
         ) : (

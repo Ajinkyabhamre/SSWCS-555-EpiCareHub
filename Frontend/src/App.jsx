@@ -14,12 +14,10 @@ import Brain from "./components/Brain";
 import Patients from "./components/Patients";
 import PatientDetails from "./components/PatientDetails";
 import RegistrationPage from "./components/RegistrationPage";
-<<<<<<< HEAD
 import Dashboard from "./components/Dashboard";
-// import AdminPage from "./components/AdminPage"; // Import the AdminPage component
-=======
+
 import AdminPage from "./components/AdminPage"; 
->>>>>>> User-Role
+
 
 const PrivateRoute = ({ component: Component, ...rest }) => {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -55,8 +53,6 @@ const App = () => {
           <Route path="/brain" element={<PrivateRoute component={Brain} />} />
           <Route path="/signin" element={<Signin />} />
           <Route path="/register" element={<UserInput />} />
-          
-          
           <Route path="/admin" element={<PrivateRoute component={AdminPage} />} /> 
           <Route
             path="*"

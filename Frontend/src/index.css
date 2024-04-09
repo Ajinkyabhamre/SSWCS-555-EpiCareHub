@@ -7,3 +7,18 @@
   --font-crete-round: "Crete Round", serif;
   --font-lora: "Lora", serif;
 }
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #65a19f; /* Blue color */
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

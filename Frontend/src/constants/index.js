@@ -8,13 +8,20 @@ export const navigation = [
   },
   {
     id: 1,
+    title: "Dashboard",
+    url: "/dashboard",
+    name: "dashboard",
+    isAuth: true,
+  },
+  {
+    id: 2,
     title: "Patients",
     url: "/patients",
     name: "patients",
     isAuth: true,
   },
   {
-    id: 2,
+    id: 3,
     title: "Login",
     url: "/signin",
     name: "signin",

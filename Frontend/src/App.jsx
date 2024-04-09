@@ -14,6 +14,7 @@ import Brain from "./components/Brain";
 import Patients from "./components/Patients";
 import PatientDetails from "./components/PatientDetails";
 import RegistrationPage from "./components/RegistrationPage";
+import Dashboard from "./components/Dashboard";
 // import AdminPage from "./components/AdminPage"; // Import the AdminPage component
 
 const PrivateRoute = ({ component: Component, ...rest }) => {
@@ -45,6 +46,10 @@ const App = () => {
           <Route
             path="/patient/:id"
             element={<PrivateRoute component={PatientDetails} />}
+          />
+          <Route
+            path="/dashboard"
+            element={<PrivateRoute component={Dashboard} />}
           />
           <Route path="/brain" element={<PrivateRoute component={Brain} />} />
           <Route path="/signin" element={<Signin />} />

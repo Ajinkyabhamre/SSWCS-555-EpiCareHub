@@ -152,6 +152,7 @@ const DataTableComponent = ({
         rowsPerPageOptions={[5, 10, 15]}
         filterDisplay="row"
         onRowClick={handleRowClick}
+        selectionMode="single"
       >
         <Column
           field="firstName"

@@ -14,14 +14,83 @@ const router = Router();
 router
   .route("/")
   .get(async (req, res) => {
-    return res.send("GET request to http://localhost:3000/usersDetails");
+    try {
+      const allUsers = await userDataFetch.fetchAllUsersData();
+      res.status(200).json(allUsers);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   })
   .delete(async (req, res) => {
-    return res.send("DELETE request to http://localhost:3000/usersDetails");
+    try {
+      const deletedUser = await userDataFetch.removeUser(req.params.id);
+      res.status(200).json(deletedUser);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
   })
   .put(async (req, res) => {
-    try {
+
+   /* try {
       req.body.id = validateId(req.body.id, "patient id");
+      req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
+      req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
+      req.body.username = checkIsAlphanumeric(req.body.username, "username");
+      req.body.email = validateEmail(req.body.email);
+    } catch (error) {
+      const result = {
+        userAdded: null,
+        message: error.message,
+        success: false,
+      };
+      return res.status(400).json(result);
+    }
+
+    try {
+      const updateUser = await userDataFetch.updateUserInfo(
+        req.body.id,
+        req.body
+      );
+
+      const result = {
+        userAdded: updateUser,
+        message: "User updated succesfully",
+        success: true,
+      };
+      return res.json(result);
+    } catch (error) {
+      const result = {
+        userAdded: null,
+        message: error.message,
+        success: false,
+      };
+      return res.status(404).json(result);
+    }*/
+
+  })
+  .patch(async (req, res) => {
+    return res.send("PATCH request to http://localhost:3000/usersDetails");
+  });
+
+router
+  .route("/:id")
+  .get(async (req, res) => {
+    try {
+      req.params.id = validateId(req.params.id, "user id");
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+    try {
+      const deleteUser = await userDataFetch.getUserById(req.params.id);
+      return res.status(200).json(deleteUser);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  })
+
+  .put(async (req, res) => {
+    try {
+      req.body.id = validateId(req.body.id, "user id");
       req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
       req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
       req.body.username = checkIsAlphanumeric(req.body.username, "username");
@@ -56,26 +125,9 @@ router
       return res.status(404).json(result);
     }
   })
-  .patch(async (req, res) => {
-    return res.send("PATCH request to http://localhost:3000/usersDetails");
-  });
 
-router
-  .route("/:id")
-  .get(async (req, res) => {
-    try {
-      req.params.id = validateId(req.params.id, "user id");
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-    try {
-      const deleteUser = await userDataFetch.getUserById(req.params.id);
-      return res.status(200).json(deleteUser);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  })
-  .put(async (req, res) => {})
+
+
   .delete(async (req, res) => {
     try {
       req.params.id = validateId(req.params.id, "user id");

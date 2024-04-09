@@ -90,8 +90,8 @@ const DataTableComponent = ({
 
   const epilepsyBodyTemplate = (rowData) => {
     const badgeClass = rowData.isEpilepsy
-      ? "bg-green-600 text-white"
-      : "bg-gray-600 text-white";
+      ? "bg-eh-15 text-white"
+      : "bg-eh-10 text-white";
 
     const badgeText = rowData.isEpilepsy ? "Epilepsy" : "No Epilepsy";
 
@@ -152,6 +152,7 @@ const DataTableComponent = ({
         rowsPerPageOptions={[5, 10, 15]}
         filterDisplay="row"
         onRowClick={handleRowClick}
+        selectionMode="single"
       >
         <Column
           field="firstName"

@@ -278,7 +278,7 @@ const Patients = () => {
                 type="file"
                 accept=".fif"
                 onChange={handleFileChange}
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full"
               />
             </div>
             {selectedFile && (

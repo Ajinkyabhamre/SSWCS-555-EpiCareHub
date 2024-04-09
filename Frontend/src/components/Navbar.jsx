@@ -58,11 +58,27 @@ const Navbar = () => {
               <InfoIcon />
               About Us
             </Link>
+
+              {/* Admin link */}
+            <Link
+              to="/admin"
+              className={`block relative font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 px-6 ${
+                pathname.includes("/admin") ? "z-10 text-eh-3" : "text-eh-2"
+              }`}
+            >
+              Admin
+            </Link>
+
+
+
+
             {isAuth && (
               <button
                 className="flex justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3"
                 onClick={handleLogout}
               >
+
+                
                 <LogoutIcon />
                 Logout
               </button>

@@ -10,6 +10,8 @@ const AdminPage = () => {
   const [users, setUsers] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [login, setLogin] = useState({ username: '', password: '' });
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -20,8 +22,25 @@ const AdminPage = () => {
         console.error('There was an error fetching the users:', error);
       }
     };
-    fetchUsers();
-  }, []);
+    if (isLoggedIn) {
+      fetchUsers();
+    }
+  }, [isLoggedIn]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Hardcoded credentials for demonstration
+    if (login.username === 'admin' && login.password === 'adminpass') {
+      setIsLoggedIn(true);
+    } else {
+      alert('Invalid credentials');
+    }
+  };
+
+  const handleLoginChange = (e) => {
+    const { name, value } = e.target;
+    setLogin({ ...login, [name]: value });
+  };
 
   const handleDialogOpen = (user) => {
     setSelectedUser(user);
@@ -35,7 +54,7 @@ const AdminPage = () => {
   const handleUserDelete = async (id) => {
     try {
       await axios.delete(`http://localhost:3000/usersDetails/${id}`);
-      setUsers(users.filter((user) => user._id !== id));
+      setUsers(users.filter(user => user._id !== id));
     } catch (error) {
       console.error('There was an error deleting the user:', error);
     }
@@ -43,13 +62,15 @@ const AdminPage = () => {
 
   const handleUserUpdate = async () => {
     try {
-      console.log('Attempting to update user with data:', selectedUser);
-      const response = await axios.put(`http://localhost:3000/usersDetails/${selectedUser._id}`, selectedUser);
-      console.log('Update response:', response.data);
-
-      if (response.data) {
-        setUsers(users.map(user => user._id === selectedUser._id ? { ...user, ...selectedUser } : user));
-        setOpenDialog(false);
+      const { _id, ...updatePayload } = selectedUser;
+      const response = await axios.put(`http://localhost:3000/usersDetails/${_id}`, updatePayload);
+      
+      if (response.data.success) {
+        // Optionally refresh the user list here
+        setUsers(users.map(user => user._id === _id ? { ...user, ...updatePayload } : user));
+        handleDialogClose();
+      } else {
+        console.error('Update failed:', response.data.message);
       }
     } catch (error) {
       console.error('There was an error updating the user:', error);
@@ -61,6 +82,51 @@ const AdminPage = () => {
     setSelectedUser({ ...selectedUser, [name]: value });
   };
 
+  if (!isLoggedIn) {
+    return (
+      <Box sx={{ maxWidth: 300, mx: 'auto', my: 4 }}>
+        <h1>Admin Login</h1>
+        <form onSubmit={handleLogin}>
+          <TextField
+            label="Username"
+            margin="normal"
+            name="username"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={login.username}
+            onChange={handleLoginChange}
+          />
+          <TextField
+            label="Password"
+            margin="normal"
+            name="password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={login.password}
+            onChange={handleLoginChange}
+          />
+          <Button 
+    type="submit" 
+  variant="contained" 
+  fullWidth 
+  sx={{ 
+    mt: 3, 
+    bgcolor: 'green', 
+    '&:hover': {
+      bgcolor: 'darkgreen' // Darken the button when hovering over it
+    }
+  }}
+>
+  Login
+</Button>
+        </form>
+      </Box>
+    );
+  }
+
+  // AdminPage content
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', my: 4 }}>
       <h1>Admin Page</h1>
@@ -143,3 +209,4 @@ const AdminPage = () => {
 };
 
 export default AdminPage;
+

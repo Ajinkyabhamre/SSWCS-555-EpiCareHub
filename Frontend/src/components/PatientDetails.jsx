@@ -92,6 +92,7 @@ const PatientDetails = () => {
           dispatch(selectUpload(response.data.data.uploadId));
           navigate(`/patient/${patient._id}`);
           setSelectedFile(null);
+          setVisible(false);
         })
         .catch((error) => {
           console.error("Error uploading file:", error);

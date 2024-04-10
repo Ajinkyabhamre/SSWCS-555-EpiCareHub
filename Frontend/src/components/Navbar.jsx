@@ -5,6 +5,7 @@ import brain from "/brain.png";
 import InfoIcon from "@mui/icons-material/Info";
 import { navigation } from "../constants";
 import Diversity1Icon from "@mui/icons-material/Diversity1";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 
 const Navbar = () => {
   const { pathname } = useLocation();
@@ -41,15 +42,16 @@ const Navbar = () => {
               <Link
                 key={item.id}
                 to={item.url}
-                className={`flex mr-2 justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 ${
+                className={`flex mr-2  gap-1 justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 ${
                   pathname.includes(item.url) ? "z-10 text-eh-3" : "text-eh-2"
                 }`}
               >
-                <Diversity1Icon />
+                {item.icon === "1" ? <Diversity1Icon /> : <DashboardIcon />}
+
                 {item.title}
               </Link>
             ))}
-            <Link
+            {/* <Link
               className={`flex mr-2 justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 ${
                 pathname?.includes("about") ? "z-10 text-eh-3" : "text-eh-2"
               } hover:text-sk-1`}
@@ -57,28 +59,23 @@ const Navbar = () => {
             >
               <InfoIcon />
               About Us
-            </Link>
+            </Link> */}
 
-              {/* Admin link */}
-            <Link
+            {/* Admin link */}
+            {/* <Link
               to="/admin"
               className={`block relative font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 px-6 ${
                 pathname.includes("/admin") ? "z-10 text-eh-3" : "text-eh-2"
               }`}
             >
               Admin
-            </Link>
-
-
-
+            </Link> */}
 
             {isAuth && (
               <button
-                className="flex justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3"
+                className="flex justify-center gap-1 items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3"
                 onClick={handleLogout}
               >
-
-                
                 <LogoutIcon />
                 Logout
               </button>

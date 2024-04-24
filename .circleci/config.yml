@@ -4,7 +4,7 @@ version: 2.1
 orbs:
   node: circleci/node@5
 jobs:
-  test-node:
+  test-frontend:
     # Install node dependencies and run tests
     executor: node/default
     working_directory: ~/project/Frontend
@@ -16,19 +16,22 @@ jobs:
       - run:
           name: Run tests
           command: yarn test --passWithNoTests
-  deploy:
-    # This is an example deploy job, not actually used by the workflow
-    docker:
-      - image: cimg/base:stable
-    steps:
-      # Replace this with steps to deploy to users
+  test-backend:
+   executor: node/default
+   working_directory: ~/project/Frontend
+   steps:
+      - checkout:
+          path: ~/project
+      - node/install-packages:
+          pkg-manager: yarn
       - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
+          name: Run tests
+          command: yarn test --passWithNoTests
 workflows:
   build-and-test:
     jobs:
-      - test-node
+      - test-frontend
+      - test-backend
     # - deploy:
     #     requires:
     #       - test-node

@@ -5,7 +5,47 @@ import { Dialog } from "primereact/dialog";
 import { useSelector } from "react-redux";
 import { selectUpload, clearUpload } from "../features/patientSlice";
 import { useDispatch } from "react-redux";
+import { Carousel } from "primereact/carousel";
+import { Tag } from "primereact/tag";
 import FilePresentIcon from "@mui/icons-material/FilePresent";
+import noImage from "/image.png";
+
+const views = [
+  "medial",
+  "rostral",
+  "caudal",
+  "dorsal",
+  "ventral",
+  "frontal",
+  "parietal",
+  "axial",
+  "sagittal",
+  "coronal",
+  "lateral",
+];
+
+const responsiveOptions = [
+  {
+    breakpoint: "1400px",
+    numVisible: 2,
+    numScroll: 1,
+  },
+  {
+    breakpoint: "1199px",
+    numVisible: 3,
+    numScroll: 1,
+  },
+  {
+    breakpoint: "767px",
+    numVisible: 2,
+    numScroll: 1,
+  },
+  {
+    breakpoint: "575px",
+    numVisible: 1,
+    numScroll: 1,
+  },
+];
 
 const PatientDetails = () => {
   let { id } = useParams();
@@ -16,7 +56,6 @@ const PatientDetails = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
-  const [uploading, setUploading] = useState(false);
 
   const handleFileDrop = (event) => {
     event.preventDefault();
@@ -107,6 +146,26 @@ const PatientDetails = () => {
       setVisible(true);
     }
   };
+
+  const viewTemplate = useCallback(
+    (view) => {
+      return (
+        <div className="border-1 surface-border border-round text-center h-fit">
+          <div className="mb-3">
+            <img
+              className="w-full h-60 object-cover object-center"
+              src={`http://localhost:1010/${selectedUpload}/figures/${view}.png`}
+              onError={(e) => {
+                e.target.src = noImage;
+              }}
+            />
+          </div>
+          <Tag value={view} severity="success"></Tag>
+        </div>
+      );
+    },
+    [selectedUpload]
+  );
 
   useEffect(() => {
     let config = {
@@ -201,13 +260,15 @@ const PatientDetails = () => {
           <div className="flex flex-col gap-2 row-span-5">
             <div className="flex gap-2">
               {selectedUpload && (
-                <div className="p-4 bg-white shadow-md rounded-lg w-3/4">
+                <div className="p-4 bg-white shadow-md rounded-lg w-3/4 max-h-fit">
                   <h2 className="text-xl mb-2 text-gray-800">
                     Latest EEG Visuals
                   </h2>
-                  <img
-                    className="h-full object-contain"
-                    src={`http://localhost:1010/${selectedUpload}/figures/EEG_LA.png`}
+                  <Carousel
+                    value={views}
+                    numVisible={2}
+                    numScroll={2}
+                    itemTemplate={viewTemplate}
                   />
                 </div>
               )}

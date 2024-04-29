@@ -9,6 +9,7 @@ import { Carousel } from "primereact/carousel";
 import { Tag } from "primereact/tag";
 import FilePresentIcon from "@mui/icons-material/FilePresent";
 import noImage from "/image.png";
+import PDFGenerator from "./PDFGenerator";
 
 const views = [
   "medial",
@@ -22,29 +23,6 @@ const views = [
   "sagittal",
   "coronal",
   "lateral",
-];
-
-const responsiveOptions = [
-  {
-    breakpoint: "1400px",
-    numVisible: 2,
-    numScroll: 1,
-  },
-  {
-    breakpoint: "1199px",
-    numVisible: 3,
-    numScroll: 1,
-  },
-  {
-    breakpoint: "767px",
-    numVisible: 2,
-    numScroll: 1,
-  },
-  {
-    breakpoint: "575px",
-    numVisible: 1,
-    numScroll: 1,
-  },
 ];
 
 const PatientDetails = () => {
@@ -225,8 +203,11 @@ const PatientDetails = () => {
             <span className="text-3xl font-bold mx-4">
               {patient.firstName} {patient.lastName}
             </span>
-            <div className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded w-fit">
-              <Link to={"/patients"}>Go Back to Patients List</Link>
+            <div className="flex gap-2">
+              <PDFGenerator patient={patient} />
+              <div className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded w-fit">
+                <Link to={"/patients"}>Go Back to Patients List</Link>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 row-span-2 px-10">

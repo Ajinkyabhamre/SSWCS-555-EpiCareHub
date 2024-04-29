@@ -39,7 +39,7 @@ The development is in-progress so tech stack can be modified in future.</p>
   - Activate the new environment using <b>conda activate myenv</b>
   - Include all dependencies listed in environment.yml with command <b> conda env update -f environment.yml </b>
   - Make sure all the dependices are installed.
-  - Run the command <b>uvicorn brain_api:app</b>
+  - Run the command <b>uvicorn brain_api:app --reload</b>
   - If the error persists running the fast api backend for MNE, it will be because some of the packages would not have been installed and look at error mesaage of the package and install the package with conda on the same environment search for the command on internet as every package has different syntax.
 
 <!-- <p>In terminal go to Frontend Folder. From Frontend folder run command- <b> npm i</b>

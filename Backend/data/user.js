@@ -1,21 +1,31 @@
 import { users } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
-import { checkIsProperString, isDateValid, validateId } from "./helper.js";
+import {
+  checkIsProperString,
+  validateId,
+  checkIsProperUsername,
+  checkPassword,
+  validateEmail,
+} from "./helper.js";
+import bcrypt from "bcrypt";
+
+const saltRounds = 14;
 
 const exportedMethods = {
   async addUser(firstName, lastName, username, email, password) {
     firstName = checkIsProperString(firstName, "firstName");
     lastName = checkIsProperString(lastName, "lastName");
-    username = checkIsProperString(username, "username");
-    email = checkIsProperString(email, "email");
-    password = checkIsProperString(password, "password");
+    username = checkIsProperUsername(username);
+    email = validateEmail(email);
+    password = checkPassword(password);
 
+    let hashedPassword = await bcrypt.hash(password, saltRounds);
     let newUser = {
       firstName: firstName,
       lastName: lastName,
       username: username,
       email: email,
-      password: password,
+      password: hashedPassword,
     };
 
     const usersCollection = await users();
@@ -24,19 +34,24 @@ const exportedMethods = {
 
     if (!newInsertInformation.insertedId)
       throw new Error("Error: Insert failed!");
-    return await this.getUserById(
-      newInsertInformation.insertedId.toString()
-    );
+    return { signUpCompleted: true };
   },
 
-  async getUserById(id) {
-    id = validateId(id, "id");
+  async loginUser(username, password) {
+    username = checkIsProperUsername(username);
+    password = checkPassword(password);
     const UsersCollection = await users();
     const user = await UsersCollection.findOne({
-      _id: ObjectId.createFromHexString(id),
+      username: username,
     });
-    if (!user) throw new Error("Error: Paitent not found");
-    return user;
+    if (!user) throw new Error("Either username or password is invalid");
+
+    let passwordCheck = await bcrypt.compare(password, user.password);
+    if (!passwordCheck)
+      throw new Error("Either username or password is invalid");
+
+    const { password, ...rest } = user;
+    return rest;
   },
 };
 

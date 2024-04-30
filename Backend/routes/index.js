@@ -4,7 +4,7 @@ import usersDetailRoutes from "./usersDetails.js";
 
 const constructorMethod = (app) => {
   app.use("/patients", paitentRoutes);
-  app.use("/users", userRoutes);
+  app.use("/", userRoutes);
   app.use("/usersDetails", usersDetailRoutes);
 
   app.use("*", (req, res) => {

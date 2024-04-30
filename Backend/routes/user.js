@@ -1,10 +1,16 @@
 import { Router } from "express";
 const router = Router();
 import { userData } from "../data/index.js";
-import { checkIsProperString, isDateValid } from "../data/helper.js";
+import {
+  checkIsProperString,
+  isDateValid,
+  checkIsProperUsername,
+  checkPassword,
+  validateEmail,
+} from "../data/helper.js";
 
 router
-  .route("/")
+  .route("/register")
   .get(async (req, res) => {
     return res.send("GET request to http://localhost:3000/users");
   })
@@ -12,9 +18,9 @@ router
     try {
       req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
       req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
-      req.body.username = checkIsProperString(req.body.username, "username");
-      req.body.email = checkIsProperString(req.body.email, "email");
-      req.body.password = checkIsProperString(req.body.password, "password");
+      req.body.username = checkIsProperUsername(req.body.username);
+      req.body.email = validateEmail(req.body.email);
+      req.body.password = checkPassword(req.body.password);
       //req.body.contact = checkIsProperString(req.body.password, "password");
     } catch (error) {
       const result = {
@@ -22,7 +28,7 @@ router
         message: error.message,
         success: false,
       };
-      return res.status(404).json(result);
+      return res.status(400).json({ isSuccess: false, message: error.message });
     }
 
     try {
@@ -34,12 +40,11 @@ router
         req.body.password
       );
 
-      const result = {
-        userAdded: addUser,
-        message: "User added succesfully",
-        success: true,
-      };
-      return res.status(201).json(result);
+      if (!addUser.signUpCompleted) throw new Error("Internal Server Error");
+
+      return res
+        .status(201)
+        .json({ isSuccess: true, message: "User added Succesfully" });
     } catch (error) {
       const result = {
         userAdded: null,
@@ -48,15 +53,38 @@ router
       };
       return res.status(404).json(result);
     }
-  })
-  .delete(async (req, res) => {
-    return res.send("DELETE request to http://localhost:3000/paitents");
-  })
-  .put(async (req, res) => {
-    return res.send("PUT request to http://localhost:3000/paitents");
-  })
-  .patch(async (req, res) => {
-    return res.send("PATCH request to http://localhost:3000/paitents");
   });
+
+router.route("/login").post(async (req, res) => {
+  let userData = req.body;
+  if (!req.body) return res.status(400).json({ error: "No data passed" });
+  try {
+    userData.username = checkIsProperUsername(userData.username);
+    userData.password = checkPassword(userData.password);
+  } catch (error) {
+    return res.status(400).json({ isSuccess: false, error: error.message });
+  }
+
+  try {
+    const loginUser = await userData.loginUser(
+      userData.username,
+      userData.password
+    );
+
+    req.session.user = loginUser;
+    return res
+      .status(200)
+      .json({ isSuccess: true, message: "logged in successfully" });
+  } catch (error) {
+    return res.status(404).json({ isSuccess: false, error: error.message });
+  }
+});
+
+router.route("/logout").post(async (req, res) => {
+  if (req.session.user) {
+    req.session.destroy();
+    return res.json({ isSuccess: true, message: "Logout Successfull" });
+  }
+});
 
 export default router;

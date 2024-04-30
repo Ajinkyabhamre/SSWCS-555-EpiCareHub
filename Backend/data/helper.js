@@ -4,6 +4,8 @@ import { ObjectId } from "mongodb";
 
 import moment from "moment";
 
+import validator from "validator";
+
 export const isInputProvided = (variable, variableName) => {
   if (variable === undefined || variable === null)
     throw new Error(`Error: ${variableName || "variable"} not provided`);
@@ -54,14 +56,14 @@ export const isDateValid = (dateStr, varName) => {
   return dateStr;
 };
 
-export const validateEmail = (email) => {
-  checkIsProperString(email, "email");
-  var validRegex =
-    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-  if (!email.match(validRegex)) throw new Error("email is invald");
+// export const validateEmail = (email) => {
+//   checkIsProperString(email, "email");
+//   var validRegex =
+//     /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+//   if (!email.match(validRegex)) throw new Error("email is invald");
 
-  return email;
-};
+//   return email;
+// };
 
 export const checkIsProperNumber = (val, variableName) => {
   if (typeof val !== "number") {
@@ -75,12 +77,11 @@ export const checkIsProperNumber = (val, variableName) => {
   }
 };
 
-
 export const mapGender = {
-  0 : "Male",
-  1 : "Female",
-  2 : "Others",
-  3 : "Prefer not to say"
+  0: "Male",
+  1: "Female",
+  2: "Others",
+  3: "Prefer not to say",
 };
 
 export const checkIsAlphanumeric = (str, strName) => {
@@ -97,8 +98,57 @@ export const checkIsAlphanumeric = (str, strName) => {
   // Check if str contains only alphanumeric characters
   const alphanumericRegex = /^[a-zA-Z0-9]+$/;
   if (!alphanumericRegex.test(str)) {
-    throw new Error(`Error: ${strName || "String"} contains non-alphanumeric characters`);
+    throw new Error(
+      `Error: ${strName || "String"} contains non-alphanumeric characters`
+    );
   }
 
   return str; // Return true if str contains only alphanumeric characters
+};
+
+export const validateEmail = (email) => {
+  isInputProvided(email, "Email");
+  checkIsProperString(email, "email");
+
+  if (!validator.isEmail(email)) throw new Error("Email address is invalid");
+
+  return email;
+};
+
+export const checkPassword = (password) => {
+  isInputProvided(password, "Password");
+  if (typeof password !== "string") {
+    throw new Error("Error: Password is not a valid string.");
+  }
+  if (password.length < 8) {
+    throw new Error(`Error: Password must be at least 8 characters long!`);
+  }
+  password = password.trim();
+  if (!password) {
+    throw new Error("Error: Password cannot be empty string.");
+  }
+  if (!/[A-Z]/.test(password))
+    throw new Error(
+      `Error: Password must contain at least one uppercase character !`
+    );
+  if (!/\d/.test(password)) {
+    throw new Error(`Error: Password must contain at least one number !`);
+  }
+  if (!/[^a-zA-Z0-9]/.test(password)) {
+    throw new Error(
+      `Error: Password must contain at least one special character !`
+    );
+  }
+  return password;
+};
+
+export const checkIsProperUsername = (username) => {
+  isInputProvided(username, "username");
+  username = checkIsProperString(username, "username");
+  if (/\d/.test(username)) throw new Error(`username contains a number`); // number check regex from google
+  if (username.length < 5)
+    throw new Error(`username should have atleast 5 charaters`);
+  if (username.length > 10)
+    throw new Error(`username should not be more than 10 charaters`);
+  return username.toLowerCase();
 };

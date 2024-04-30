@@ -291,14 +291,14 @@ const Patients = () => {
               </div>
             )}
 
-            <button
+            {/* <button
               className="bg-eh-4 mt-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 disabled:cursor-not-allowed"
               type="button"
               onClick={handleFileSubmit}
               disabled={!selectedFile}
             >
               Upload File
-            </button>
+            </button> */}
           </div>
         ) : (
           <PatientForm patient={selectedPatient} onSubmit={handleSubmit} />

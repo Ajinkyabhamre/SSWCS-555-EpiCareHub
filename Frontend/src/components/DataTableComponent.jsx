@@ -122,7 +122,7 @@ const DataTableComponent = ({
           }}
         />
       </Tooltip>
-      <Tooltip title="Generate Epilepsy" arrow>
+      {/* <Tooltip title="Generate Epilepsy" arrow>
         <FileUploadIcon
           className="cursor-pointer text-green-800"
           onClick={(e) => {
@@ -130,7 +130,7 @@ const DataTableComponent = ({
             onUploadClick(rowData);
           }}
         />
-      </Tooltip>
+      </Tooltip> */}
     </div>
   );
 

@@ -76,7 +76,8 @@ router
       req.body.dob = checkIsProperString(req.body.dob, "date of birth");
       req.body.dob = isDateValid(req.body.dob, "date of birth");
       req.body.email = validateEmail(req.body.email);
-      if(req.body.comments) req.body.comments = checkIsProperString(req.body.comments,"comment");
+      if (req.body.comments)
+        req.body.comments = checkIsProperString(req.body.comments, "comment");
     } catch (error) {
       const result = {
         patientUpdated: null,
@@ -120,6 +121,31 @@ router.route("/statistics").get(async (req, res) => {
   }
 });
 
+router.route("/get").post(async (req, res) => {
+  try {
+    if (req.body.firstName !== undefined)
+      req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
+    if (req.body.lastName !== undefined)
+      req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
+    if (req.body.dob !== undefined) {
+      req.body.dob = checkIsProperString(req.body.dob, "date of birth");
+      req.body.dob = isDateValid(req.body.dob, "date of birth");
+    }
+
+    if (req.body.email !== undefined)
+      req.body.email = validateEmail(req.body.email, "email");
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+
+  try {
+    const PatientsData = await patientsData.getAllPaitents(req.body);
+    return res.json(PatientsData);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router
   .route("/:id")
   .get(async (req, res) => {
@@ -149,31 +175,6 @@ router
       res.status(400).json({ error: error.message });
     }
   });
-
-router.route("/get").post(async (req, res) => {
-  try {
-    if (req.body.firstName !== undefined)
-      req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
-    if (req.body.lastName !== undefined)
-      req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
-    if (req.body.dob !== undefined) {
-      req.body.dob = checkIsProperString(req.body.dob, "date of birth");
-      req.body.dob = isDateValid(req.body.dob, "date of birth");
-    }
-
-    if (req.body.email !== undefined)
-      req.body.email = validateEmail(req.body.email, "email");
-  } catch (error) {
-    return res.status(400).json({ error: error.message });
-  }
-
-  try {
-    const PatientsData = await patientsData.getAllPaitents(req.body);
-    return res.json(PatientsData);
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-});
 
 router.route("/upload").post(async (req, res) => {
   // let patientId = req.body.patientId;

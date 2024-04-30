@@ -95,7 +95,10 @@ const exportedMethods = {
     }
 
     // Retrieve patients based on the constructed filter
-    let patientsList = await patientsCollection.find(filter).toArray();
+    let patientsList = await patientsCollection
+      .find(filter)
+      .sort({ creationDate: -1 })
+      .toArray();
 
     patientsList = patientsList.map((object) => {
       object.age = calulateAge(object.dob);
@@ -233,7 +236,7 @@ const exportedMethods = {
     );
 
     res.ageGroupsData = Object.entries(res.ageGroups).map(
-      ([ageGroup, number]) => ({ageGroup, number})
+      ([ageGroup, number]) => ({ ageGroup, number })
     );
 
     return res;

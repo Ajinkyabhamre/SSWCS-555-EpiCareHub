@@ -50,7 +50,7 @@ const exportedMethods = {
     if (!passwordCheck)
       throw new Error("Either username or password is invalid");
 
-    const { password, ...rest } = user;
+    const { password: hashedPassword, ...rest } = user;
     return rest;
   },
 };

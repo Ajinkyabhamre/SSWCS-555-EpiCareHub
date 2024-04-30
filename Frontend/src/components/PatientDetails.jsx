@@ -106,8 +106,33 @@ const PatientDetails = () => {
       axios
         .post("http://127.0.0.1:8000/visualize_brain", formData)
         .then((response) => {
-          dispatch(selectUpload(response.data.data.uploadId));
-          navigate(`/patient/${patient._id}`);
+          let config = {
+            method: "get",
+            maxBodyLength: Infinity,
+            url: `http://localhost:3000/patients/${id}`,
+            headers: {},
+          };
+          axios
+            .request(config)
+            .then((response) => {
+              setPatient(response.data);
+              const tempPatient = response.data;
+              setIsEpilepsy(tempPatient.isEpilepsy);
+              setComments(tempPatient.comments);
+              if (
+                !selectedUpload &&
+                tempPatient.eegVisuals &&
+                tempPatient.eegVisuals.length > 0
+              )
+                dispatch(
+                  selectUpload(
+                    tempPatient.eegVisuals[tempPatient.eegVisuals.length - 1]
+                  )
+                );
+            })
+            .catch((error) => {
+              console.log(error);
+            });
           setSelectedFile(null);
           setVisible(false);
         })
@@ -126,19 +151,22 @@ const PatientDetails = () => {
   };
 
   const viewTemplate = useCallback(
-    (view) => {
+    (image) => {
       return (
         <div className="border-1 surface-border border-round text-center h-fit">
           <div className="mb-3">
             <img
               className="w-full h-60 object-cover object-center"
-              src={`http://localhost:1010/${selectedUpload}/figures/${view}.png`}
+              src={image}
               onError={(e) => {
                 e.target.src = noImage;
               }}
             />
           </div>
-          <Tag value={view} severity="success"></Tag>
+          <Tag
+            value={views.find((view) => image.includes(view))}
+            severity="success"
+          ></Tag>
         </div>
       );
     },
@@ -166,7 +194,7 @@ const PatientDetails = () => {
         )
           dispatch(
             selectUpload(
-              tempPatient.eegVisuals[tempPatient.eegVisuals.length - 1].uploadId
+              tempPatient.eegVisuals[tempPatient.eegVisuals.length - 1]
             )
           );
       })
@@ -204,7 +232,7 @@ const PatientDetails = () => {
               {patient.firstName} {patient.lastName}
             </span>
             <div className="flex gap-2">
-              <PDFGenerator patient={patient} />
+              <PDFGenerator patient={patient} currentReport={selectedUpload} />
               <div className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded w-fit">
                 <Link to={"/patients"}>Go Back to Patients List</Link>
               </div>
@@ -246,7 +274,7 @@ const PatientDetails = () => {
                     Latest EEG Visuals
                   </h2>
                   <Carousel
-                    value={views}
+                    value={selectedUpload?.images}
                     numVisible={2}
                     numScroll={2}
                     itemTemplate={viewTemplate}
@@ -313,7 +341,7 @@ const PatientDetails = () => {
                     <div
                       className="flex justify-between items-center px-4"
                       key={visual.uploadId}
-                      onClick={() => dispatch(selectUpload(visual.uploadId))}
+                      onClick={() => dispatch(selectUpload(visual))}
                     >
                       <div className="flex justify-between items-center py-2 px-4 w-full mr-4 hover:bg-eh-3 cursor-pointer">
                         <h4>Visual {index + 1}</h4>

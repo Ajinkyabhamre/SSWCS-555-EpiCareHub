@@ -42,6 +42,17 @@ The development is in-progress so tech stack can be modified in future.</p>
   - Run the command <b>uvicorn brain_api:app --reload</b>
   - If the error persists running the fast api backend for MNE, it will be because some of the packages would not have been installed and look at error mesaage of the package and install the package with conda on the same environment search for the command on internet as every package has different syntax.
 
+  #### Some of the packages that need to be installed are
+
+  - uvcorn: conda install -c conda-forge uvicorn
+  - fastapi: conda install -c conda-forge fastapi
+  - python-multipart: conda install -c conda-forge python-multipart
+  - mne: conda install -c conda-forge mne
+  - torch: conda install pytorch torchvision torchaudio -c pytorch
+  - cloudinary: pip install cloudinary
+
+Try with the above packages installed on your pc, if any other package is remaining just install conda install -c conda-forge <package_name> as showed above.
+
 <!-- <p>In terminal go to Frontend Folder. From Frontend folder run command- <b> npm i</b>
   and then <b>npm run dev</b> If you still see an error then delete the node_modules folder and then start with <b> npm i</b> and <b> npm run dev</b> to resolve the previously unresolved dependencies<p></p><br>
 You will get a link for application e.g., <b><i>Local:   http://localhost:5173/</i></b> <br>

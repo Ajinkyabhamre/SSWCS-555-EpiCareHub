@@ -9,7 +9,7 @@
  * - Framer Motion animations for smooth entrance and interactions
  */
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 /**
@@ -67,7 +67,17 @@ const StepCard = ({ number, title, description, index }) => (
  * Modern health-tech landing page: white + emerald green, responsive, accessible
  */
 export default function Home() {
+  const navigate = useNavigate();
+  const isLoggedIn = localStorage.getItem('isLoggedIn');
   const currentYear = new Date().getFullYear();
+
+  const handleHeroButtonClick = (destination) => {
+    if (!isLoggedIn) {
+      navigate('/signin');
+    } else {
+      navigate(destination);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -137,30 +147,24 @@ export default function Home() {
                 variants={itemVariants}
                 className="flex flex-col sm:flex-row gap-4"
               >
-                <motion.div
+                <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  onClick={() => handleHeroButtonClick('/dashboard')}
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 shadow-md shadow-emerald-600/40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 cursor-pointer"
                 >
-                  <Link
-                    to="/signin"
-                    className="inline-flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 shadow-md shadow-emerald-600/40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
-                  >
-                    Launch EpiCareHub →
-                  </Link>
-                </motion.div>
-                <motion.div
+                  Launch EpiCareHub →
+                </motion.button>
+                <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  onClick={() => handleHeroButtonClick('/dashboard')}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-white bg-white bg-opacity-80 hover:bg-opacity-100 text-emerald-700 font-semibold px-8 py-3 shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 cursor-pointer"
                 >
-                  <Link
-                    to="/dashboard"
-                    className="inline-flex items-center justify-center rounded-full border-2 border-white bg-white bg-opacity-80 hover:bg-opacity-100 text-emerald-700 font-semibold px-8 py-3 shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
-                  >
-                    Explore Dashboard
-                  </Link>
-                </motion.div>
+                  Explore Dashboard
+                </motion.button>
               </motion.div>
             </motion.div>
 

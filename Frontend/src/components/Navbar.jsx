@@ -16,8 +16,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const isLoggedIn = localStorage.getItem("isLoggedIn");
 
-  // Don't show nav links on public pages
-  const isPublicPage = ["/", "/signin", "/register"].includes(location.pathname);
+  // Show nav links only when logged in
+  const showNavLinks = isLoggedIn;
 
   const isActive = (path) => location.pathname.startsWith(path);
 
@@ -26,8 +26,8 @@ export default function Navbar() {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userToken");
 
-    // Navigate to login
-    navigate("/signin");
+    // Navigate to landing page
+    navigate("/");
   };
 
   const navVariants = {
@@ -86,10 +86,69 @@ export default function Navbar() {
           </Link>
         </motion.div>
 
-        {/* Nav Links - Only show on authenticated/non-public pages */}
-        {!isPublicPage && (
-          <nav className="flex items-center gap-1 md:gap-2 text-sm font-medium">
-            {/* Dashboard Link */}
+        {/* Nav Links - Conditional rendering based on auth state */}
+        <nav className="flex items-center gap-1 md:gap-2 text-sm font-medium">
+          {isLoggedIn ? (
+            <>
+              {/* Dashboard Link */}
+              <motion.div
+                custom={1}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link
+                  to="/dashboard"
+                  className={`inline-flex items-center rounded-full px-4 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
+                    isActive("/dashboard")
+                      ? "bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-200/40"
+                      : "text-slate-700 hover:text-emerald-700 hover:bg-emerald-50"
+                  }`}
+                >
+                  Dashboard
+                </Link>
+              </motion.div>
+
+              {/* Patients Link */}
+              <motion.div
+                custom={2}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link
+                  to="/patients"
+                  className={`inline-flex items-center rounded-full px-4 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
+                    isActive("/patients")
+                      ? "bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-200/40"
+                      : "text-slate-700 hover:text-emerald-700 hover:bg-emerald-50"
+                  }`}
+                >
+                  Patients
+                </Link>
+              </motion.div>
+
+              {/* Logout Button */}
+              <motion.button
+                custom={3}
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+                type="button"
+                onClick={handleLogout}
+                className="ml-2 inline-flex items-center rounded-full border-2 border-emerald-300 bg-white px-4 py-1.5 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-50 hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                whileHover={{ scale: 1.05, backgroundColor: "#f0fdf4" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Logout
+              </motion.button>
+            </>
+          ) : (
+            /* Sign In Link for non-authenticated users */
             <motion.div
               custom={1}
               variants={itemVariants}
@@ -99,54 +158,14 @@ export default function Navbar() {
               whileTap={{ scale: 0.95 }}
             >
               <Link
-                to="/dashboard"
-                className={`inline-flex items-center rounded-full px-4 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
-                  isActive("/dashboard")
-                    ? "bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-200/40"
-                    : "text-slate-700 hover:text-emerald-700 hover:bg-emerald-50"
-                }`}
+                to="/signin"
+                className="inline-flex items-center rounded-full border-2 border-emerald-600 bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-emerald-700 hover:border-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
               >
-                Dashboard
+                Sign in
               </Link>
             </motion.div>
-
-            {/* Patients Link */}
-            <motion.div
-              custom={2}
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link
-                to="/patients"
-                className={`inline-flex items-center rounded-full px-4 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
-                  isActive("/patients")
-                    ? "bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-200/40"
-                    : "text-slate-700 hover:text-emerald-700 hover:bg-emerald-50"
-                }`}
-              >
-                Patients
-              </Link>
-            </motion.div>
-
-            {/* Logout Button */}
-            <motion.button
-              custom={3}
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-              type="button"
-              onClick={handleLogout}
-              className="ml-2 inline-flex items-center rounded-full border-2 border-emerald-300 bg-white px-4 py-1.5 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-50 hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
-              whileHover={{ scale: 1.05, backgroundColor: "#f0fdf4" }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Logout
-            </motion.button>
-          </nav>
-        )}
+          )}
+        </nav>
       </div>
     </motion.header>
   );

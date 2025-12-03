@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Navbar from './Navbar';
 
 const UserInput = () => {
   const actualSecretKey = 'epicare';
@@ -220,22 +221,7 @@ const UserInput = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white">
-      {/* Compact Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="border-b border-emerald-50 bg-white py-4 shadow-sm"
-      >
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white text-lg">
-              🧠
-            </div>
-            <span className="font-semibold text-slate-900">EpiCareHub</span>
-          </div>
-        </div>
-      </motion.header>
+      <Navbar />
 
       {/* Main Content */}
       <div className="flex items-center justify-center px-4 py-12 md:py-16">

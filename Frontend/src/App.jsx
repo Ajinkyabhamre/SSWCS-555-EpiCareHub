@@ -13,7 +13,6 @@ import Signin from "./components/EpiCareHubLogin";
 import Brain from "./components/Brain";
 import Patients from "./components/Patients";
 import PatientDetails from "./components/PatientDetails";
-import RegistrationPage from "./components/RegistrationPage";
 import Dashboard from "./components/Dashboard";
 
 import AdminPage from "./components/AdminPage";

@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const UserInput = () => {
-  const actualSecretKey = 'epicare';
+  // NOTE: Secret key validation must be done on backend, never expose secrets in frontend
+  // Backend should validate the secret key against secure configuration
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -178,7 +179,6 @@ const UserInput = () => {
       };
 
       const response = await axios.post('http://localhost:3000/users', submitData);
-      console.log(response.data);
 
       setSuccessMessage('Registration successful! You can now sign in.');
       // Reset form

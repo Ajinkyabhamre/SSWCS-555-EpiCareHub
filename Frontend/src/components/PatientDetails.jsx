@@ -205,7 +205,7 @@ const PatientDetails = () => {
           );
       })
       .catch((error) => {
-        console.log(error);
+        console.error('Error fetching patient data:', error);
       });
   }, [dispatch, id, selectedUpload]);
 

@@ -3,7 +3,7 @@
  *
  * Clean, modern health-tech landing page for EpiCareHub
  * - White + light mint color scheme
- * - Simple, lightweight brain visual (CSS-animated, no 3D)
+ * - Static EEG brain localization illustration
  * - Feature cards, how-it-works section, footer
  * - Fully responsive, accessible design
  * - Framer Motion animations for smooth entrance and interactions
@@ -11,7 +11,6 @@
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BrainVisual } from "./BrainVisual";
 
 /**
  * FeatureCard
@@ -165,7 +164,7 @@ export default function Home() {
               </motion.div>
             </motion.div>
 
-            {/* Right Column: Brain Visual Card */}
+            {/* Right Column: Brain Illustration Card */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -180,7 +179,11 @@ export default function Home() {
                 <div className="absolute top-4 left-4 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full px-3 py-1 z-10">
                   Live Preview
                 </div>
-                <BrainVisual />
+                <img
+                  src="/assets/homePhoto.svg"
+                  alt="EEG-based 3D brain localization illustration"
+                  className="h-full w-full object-contain p-4"
+                />
               </motion.div>
             </motion.div>
           </div>

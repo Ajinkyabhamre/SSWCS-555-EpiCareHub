@@ -538,6 +538,20 @@ View CI status: https://app.circleci.com/
 
 ---
 
+## Repository Structure Notes
+
+### Localization-Algorithm Folder
+
+The `Localization-Algorithm/` folder is treated as a **normal project directory**, not a git submodule. If you see a `.git/` directory inside it (leftover from a submodule configuration), it can be safely removed:
+
+```bash
+rm -rf Localization-Algorithm/.git
+```
+
+This will not affect the version control of the main monorepo. The folder and all its files will continue to be tracked normally by the root repository's git.
+
+---
+
 ## Updating Dependencies
 
 To update dependencies to their latest versions:

@@ -174,7 +174,7 @@ export default function Home() {
               <img
                 src="/assets/homePhoto.svg"
                 alt="EEG-based 3D brain localization illustration"
-                className="w-full h-auto max-w-md drop-shadow-xl"
+                className="w-full h-full object-cover drop-shadow-xl"
               />
             </motion.div>
           </div>

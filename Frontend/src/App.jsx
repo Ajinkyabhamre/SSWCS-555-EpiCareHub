@@ -39,7 +39,7 @@ const App = () => {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<PrivateRoute component={Home} />} />
+          <Route path="/" element={<Home />} />
           <Route
             path="/patients"
             element={<PrivateRoute component={Patients} />}

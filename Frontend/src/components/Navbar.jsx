@@ -1,90 +1,147 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import LogoutIcon from "@mui/icons-material/Logout";
-import { useState, useEffect } from "react";
-import brain from "/brain.png";
-import InfoIcon from "@mui/icons-material/Info";
-import { navigation } from "../constants";
-import Diversity1Icon from "@mui/icons-material/Diversity1";
-import DashboardIcon from "@mui/icons-material/Dashboard";
+/**
+ * Navbar.jsx
+ *
+ * Modern, light health-tech navbar for EpiCareHub
+ * - White background with mint accents
+ * - Matches the clean landing page design
+ * - Responsive, accessible, with active state styling
+ * - Framer Motion entrance animations
+ */
 
-const Navbar = () => {
-  const { pathname } = useLocation();
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+
+export default function Navbar() {
+  const location = useLocation();
   const navigate = useNavigate();
 
-  // Assume isLoggedIn is stored as a string "true" or "false" in localStorage
-  const [isAuth, setIsAuth] = useState(
-    localStorage.getItem("isLoggedIn") === "true"
-  );
-
-  useEffect(() => {
-    setIsAuth(localStorage.getItem("isLoggedIn") === "true");
-  }, [pathname]);
+  const isActive = (path) => location.pathname.startsWith(path);
 
   const handleLogout = () => {
+    // Clear authentication state
     localStorage.removeItem("isLoggedIn");
-    setIsAuth(false);
+    localStorage.removeItem("userToken");
+
+    // Navigate to login
     navigate("/signin");
   };
 
+  const navVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: -5 },
+    visible: (custom) => ({
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, delay: custom * 0.05, ease: "easeOut" },
+    }),
+  };
+
   return (
-    <div className="static w-full top-0 bg-eh-1 z-50 font-crete">
-      <nav className="flex justify-around w-full  top-[5rem] left-0 right-0 bottom-0 static mx-auto py-4">
-        <div className="relative z-2 w-full flex items-center justify-around ">
+    <motion.header
+      variants={navVariants}
+      initial="hidden"
+      animate="visible"
+      className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-emerald-50 shadow-sm"
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
+        {/* Logo / Brand */}
+        <motion.div
+          custom={0}
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <Link
-            className="flex justify-center items-center font-oswald w-[12rem] text-eh-2 font-medium text-2xl hover:text-eh-3"
             to="/"
+            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <img src={brain} width={48} height={40} alt="EpiCareHub" />
-            EpiCareHub
-          </Link>
-          <div className="flex gap-2">
-            {navigation.map((item) => (
-              <Link
-                key={item.id}
-                to={item.url}
-                className={`flex mr-2  gap-1 justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 ${
-                  pathname.includes(item.url) ? "z-10 text-eh-3" : "text-eh-2"
-                }`}
-              >
-                {item.icon === "1" ? <Diversity1Icon /> : <DashboardIcon />}
-
-                {item.title}
-              </Link>
-            ))}
-            {/* <Link
-              className={`flex mr-2 justify-center items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 ${
-                pathname?.includes("about") ? "z-10 text-eh-3" : "text-eh-2"
-              } hover:text-sk-1`}
-              to="/about"
+            <motion.div
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
-              <InfoIcon />
-              About Us
-            </Link> */}
+              <span className="text-base font-semibold text-white">🧠</span>
+            </motion.div>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold tracking-tight text-slate-900">
+                EpiCareHub
+              </span>
+              <span className="text-[11px] text-emerald-600 font-medium">
+                Presurgical Planning
+              </span>
+            </div>
+          </Link>
+        </motion.div>
 
-            {/* Admin link */}
-            {/* <Link
-              to="/admin"
-              className={`block relative font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3 px-6 ${
-                pathname.includes("/admin") ? "z-10 text-eh-3" : "text-eh-2"
+        {/* Nav Links */}
+        <nav className="flex items-center gap-1 md:gap-2 text-sm font-medium">
+          {/* Dashboard Link */}
+          <motion.div
+            custom={1}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link
+              to="/dashboard"
+              className={`inline-flex items-center rounded-full px-4 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
+                isActive("/dashboard")
+                  ? "bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-200/40"
+                  : "text-slate-700 hover:text-emerald-700 hover:bg-emerald-50"
               }`}
             >
-              Admin
-            </Link> */}
+              Dashboard
+            </Link>
+          </motion.div>
 
-            {isAuth && (
-              <button
-                className="flex justify-center gap-1 items-center font-oswald uppercase text-eh-2 transition-colors hover:text-eh-3"
-                onClick={handleLogout}
-              >
-                <LogoutIcon />
-                Logout
-              </button>
-            )}
-          </div>
-        </div>
-      </nav>
-    </div>
+          {/* Patients Link */}
+          <motion.div
+            custom={2}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link
+              to="/patients"
+              className={`inline-flex items-center rounded-full px-4 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
+                isActive("/patients")
+                  ? "bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-200/40"
+                  : "text-slate-700 hover:text-emerald-700 hover:bg-emerald-50"
+              }`}
+            >
+              Patients
+            </Link>
+          </motion.div>
+
+          {/* Logout Button */}
+          <motion.button
+            custom={3}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            type="button"
+            onClick={handleLogout}
+            className="ml-2 inline-flex items-center rounded-full border-2 border-emerald-300 bg-white px-4 py-1.5 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-50 hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+            whileHover={{ scale: 1.05, backgroundColor: "#f0fdf4" }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Logout
+          </motion.button>
+        </nav>
+      </div>
+    </motion.header>
   );
-};
-
-export default Navbar;
+}

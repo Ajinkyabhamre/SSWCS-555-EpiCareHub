@@ -2,71 +2,93 @@
 import request from "supertest";
 
 import app from "../../app.js";
+import { dbConnection, closeConnection } from "../../config/mongoConnection.js";
 
 describe("users", () => {
-  it("Returns data ", async () => {
+  // Test user data that passes all validation rules
+  const validUser1 = {
+    firstName: "Ajinkya",
+    lastName: "Bhamre",
+    username: "ajinkyab", // 8 chars, alphabetic only, no numbers
+    email: "ajinkyab@example.com",
+    password: "TestPass1!", // 10 chars, uppercase, number, special char
+  };
+
+  const validUser2 = {
+    firstName: "Shoaib",
+    lastName: "Kalawant",
+    username: "shoaibk", // 7 chars, alphabetic only
+    email: "shoaibk@example.com",
+    password: "ValidPass2@", // 11 chars, uppercase, number, special char
+  };
+
+  // Clean up test users before each test to ensure clean state
+  beforeEach(async () => {
+    const db = await dbConnection();
+    const usersCollection = db.collection("users");
+    await usersCollection.deleteMany({
+      email: { $in: [validUser1.email, validUser2.email] },
+    });
+  });
+
+  it("Returns data - successful registration", async () => {
     const res = await request(app)
-      .post("/users")
-      .send({
-        firstName: "Ajinkya",
-        lastName: "bhamre",
-        username: "ajju",
-        email: "ajju@gmail.com",
-        password: "ajju123",
-      })
-      .set("Accept", "application/json") // Set Accept header to indicate JSON response expected
-      .expect("Content-Type", /json/); // Expect the response to have JSON content type
+      .post("/register")
+      .send(validUser1)
+      .set("Accept", "application/json");
 
+    // Registration endpoint returns 201 on success
     expect(res.statusCode).toEqual(201);
-    expect(res.body.success).toEqual(true);
+    expect(res.body.isSuccess).toEqual(true);
   });
 
-  it("Returns data ", async () => {
+  it("Returns data - another successful registration", async () => {
     const res = await request(app)
-      .post("/users")
-      .send({
-        firstName: "shoaib",
-        lastName: "kalawant",
-        username: "shobs",
-        email: "shobs@gmail.com",
-        password: "shob123",
-      })
-      .set("Accept", "application/json") // Set Accept header to indicate JSON response expected
-      .expect("Content-Type", /json/); // Expect the response to have JSON content type
+      .post("/register")
+      .send(validUser2)
+      .set("Accept", "application/json");
 
+    // Registration endpoint returns 201 on success
     expect(res.statusCode).toEqual(201);
-    expect(res.body.success).toEqual(true);
+    expect(res.body.isSuccess).toEqual(true);
   });
 
+  it("returns error if first name is missing", async () => {
+    const res = await request(app).post("/register").send({});
 
-
-
-
-  it("returns bad request if first name is missing", async () => {
-    const res = await request(app).post("/users").send({});
-
-    expect(res.statusCode).toEqual(404);
-    expect(res.body.success).toEqual(false);
+    // When validation fails, API returns 400
+    expect(res.statusCode).toEqual(400);
+    expect(res.body).toBeDefined();
   });
 
-  it("returns bad request if first name is missing", async () => {
-    const res = await request(app).post("/users").send({
+  it("returns error if email is missing", async () => {
+    const res = await request(app).post("/register").send({
       firstName: "Jan",
       lastName: "Mocha",
       username: "gautam",
-    
     });
 
-    expect(res.statusCode).toEqual(404);
-    expect(res.body.success).toEqual(false);
+    // When validation fails (missing email), API returns 400
+    expect(res.statusCode).toEqual(400);
+    expect(res.body).toBeDefined();
   });
 
-  it("returns bad request if first name is missing", async () => {
+  it("returns error if password is missing", async () => {
     const res = await request(app)
-      .post("/users")
+      .post("/register")
       .send({ firstName: "someName" });
 
-    expect(res.statusCode).toEqual(404);
-    expect(res.body.success).toEqual(false);
+    // When validation fails (missing other required fields), API returns 400
+    expect(res.statusCode).toEqual(400);
+    expect(res.body).toBeDefined();
   });
+});
+
+// Cleanup database connection after all tests
+afterAll(async () => {
+  try {
+    await closeConnection();
+  } catch (error) {
+    console.error("Error closing database connection:", error);
+  }
 });

@@ -1,4 +1,7 @@
 <h3>Project Name: EpiCareHub</h3><br>
+
+![CI](https://github.com/2024S-SSW-555-EpiCareHub/SSWCS-555-EpiCareHub/actions/workflows/ci.yml/badge.svg)
+
 <p>A web platform which aims to empower user in accurately identifying seizure-affected areas in the brain and thus improving surgical outcomes for epilepsy patients.
 Through an interactive interface like clicking or rotating the 3D visualization of brain, ML algorithm(s), and 3D visualizations, the application will contribute in making more informed decision.</p>
 

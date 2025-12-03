@@ -1,5 +1,5 @@
+// Load MongoDB configuration from environment variables
 export const mongoConfig = {
-  serverUrl:
-    "mongodb+srv://superadmin:M7qgGqM49yiixdy@epicarehub.72pd3xe.mongodb.net/?authMechanism=DEFAULT",
-  database: "epicarehubData",
+  serverUrl: process.env.MONGODB_URI || "mongodb://localhost:27017/epicarehub",
+  database: process.env.MONGODB_DB_NAME || "epicarehub",
 };

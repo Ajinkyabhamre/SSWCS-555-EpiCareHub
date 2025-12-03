@@ -84,8 +84,11 @@ const PatientDetails = () => {
     setVisual(true);
     const formData = new FormData();
     formData.append("uploadId", visualId);
+
+    const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
+
     axios
-      .post("http://127.0.0.1:8000/visualize_brain_historic", formData)
+      .post(`${pythonApiUrl}/visualize_brain_historic`, formData)
       .then((response) => {})
       .catch((error) => {})
       .finally(() => {
@@ -103,8 +106,11 @@ const PatientDetails = () => {
       formData.append("file", selectedFile);
       formData.append("patientId", patient._id);
       setVisual(true);
+
+      const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
+
       axios
-        .post("http://127.0.0.1:8000/visualize_brain", formData)
+        .post(`${pythonApiUrl}/visualize_brain`, formData)
         .then((response) => {
           let config = {
             method: "get",

@@ -1,0 +1,29 @@
+{
+  "name": "epicarehub",
+  "version": "0.5.0",
+  "description": "EpiCareHub - Presurgical Epilepsy Evaluation Platform",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev:frontend",
+    "dev:frontend": "cd Frontend && npm run dev",
+    "dev:backend": "cd Backend && npm run dev",
+    "dev:python": "cd Localization-Algorithm && conda activate brain && uvicorn brain_api:app --reload --port 8000",
+    "install:all": "cd Frontend && npm install && cd ../Backend && npm install",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd Frontend && npm test",
+    "test:backend": "cd Backend && npm test",
+    "build": "cd Frontend && npm run build",
+    "preview": "cd Frontend && npm run preview",
+    "lint": "cd Frontend && npm run lint"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "epilepsy",
+    "medical",
+    "3D-visualization",
+    "machine-learning",
+    "neuroscience"
+  ],
+  "author": "team-10",
+  "license": "MIT"
+}

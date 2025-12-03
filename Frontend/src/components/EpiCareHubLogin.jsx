@@ -58,7 +58,7 @@ const Signin = () => {
       try {
         // Login successful
         localStorage.setItem('isLoggedIn', 'true');
-        navigate('/');
+        navigate('/dashboard');
       } catch (error) {
         setAuthError('An error occurred during login. Please try again.');
         setIsSubmitting(false);

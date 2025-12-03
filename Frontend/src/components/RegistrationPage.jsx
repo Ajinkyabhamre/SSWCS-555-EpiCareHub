@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const UserInput = () => {
   // NOTE: Secret key validation must be done on backend, never expose secrets in frontend
   // Backend should validate the secret key against secure configuration
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -180,7 +181,8 @@ const UserInput = () => {
 
       const response = await axios.post('http://localhost:3000/users', submitData);
 
-      setSuccessMessage('Registration successful! You can now sign in.');
+      setSuccessMessage('Registration successful! Redirecting to sign in...');
+
       // Reset form
       setFormData({
         firstName: '',
@@ -193,8 +195,10 @@ const UserInput = () => {
         secretKey: '',
       });
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(''), 3000);
+      // Navigate to sign in page after showing success message
+      setTimeout(() => {
+        navigate('/signin');
+      }, 2000);
     } catch (error) {
       console.error('Registration error:', error);
       setRegistrationError(

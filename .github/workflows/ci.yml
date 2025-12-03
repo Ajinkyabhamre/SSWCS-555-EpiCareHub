@@ -53,6 +53,16 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Backend/package-lock.json
 
+      # Create backend .env for tests
+      - name: Create backend .env for tests
+        working-directory: Backend
+        run: |
+          echo "MONGODB_URI=mongodb://localhost:27017/epicarehub-test" >> .env
+          echo "SESSION_SECRET=test-session-secret" >> .env
+          echo "PYTHON_API_URL=http://localhost:8000" >> .env
+          echo "PORT=3000" >> .env
+          echo "NODE_ENV=test" >> .env
+
       # Install dependencies and run tests
       - name: Install dependencies
         working-directory: Backend
@@ -60,4 +70,6 @@ jobs:
 
       - name: Run tests
         working-directory: Backend
+        env:
+          NODE_ENV: test
         run: npm test

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import Navbar from './Navbar';
 
 const UserInput = () => {
   const actualSecretKey = 'epicare';
@@ -221,8 +220,6 @@ const UserInput = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white">
-      <Navbar />
-
       {/* Main Content */}
       <div className="flex items-center justify-center px-4 py-12 md:py-16">
         <div className="w-full max-w-6xl">

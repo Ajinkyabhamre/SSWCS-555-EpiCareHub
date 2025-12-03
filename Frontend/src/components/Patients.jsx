@@ -40,8 +40,11 @@ const Patients = () => {
       formData.append("file", selectedFile);
       formData.append("patientId", selectedPatient._id);
       setVisual(true);
+
+      const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
+
       axios
-        .post("http://127.0.0.1:8000/visualize_brain", formData)
+        .post(`${pythonApiUrl}/visualize_brain`, formData)
         .then((response) => {
           dispatch(selectUpload(response.data.data.uploadId));
           navigate(`/patient/${selectedPatient._id}`);

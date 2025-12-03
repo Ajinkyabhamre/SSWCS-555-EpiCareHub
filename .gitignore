@@ -1,3 +1,44 @@
-Frontend/package-lock.json
-Backend/package-lock.json
+# Environment variables (never commit real secrets)
+.env
+.env.local
+.env.*.local
+Frontend/.env
+Frontend/.env.local
+Frontend/.env.*.local
+Backend/.env
+Backend/.env.local
+Backend/.env.*.local
+Localization-Algorithm/.env
+Localization-Algorithm/.env.local
+
+# Dependencies
 **/node_modules/
+
+# Build outputs
+Frontend/dist/
+Backend/dist/
+
+# Testing
+coverage/
+*.lcov
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+venv/
+.venv/
+*.egg-info/

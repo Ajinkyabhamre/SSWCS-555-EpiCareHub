@@ -92,7 +92,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white text-slate-900">
       {/* ============= HERO SECTION ============= */}
-      <section className="pt-10 pb-16 md:pb-20">
+      <section className="bg-gradient-to-br from-emerald-50 via-emerald-100 to-emerald-50 py-16 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid gap-12 md:grid-cols-2 items-center">
             {/* Left Column: Text & CTAs */}
@@ -108,7 +108,7 @@ export default function Home() {
                 className="mb-6 inline-flex w-fit"
               >
                 <motion.span
-                  className="inline-flex items-center rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-semibold text-emerald-700"
+                  className="inline-flex items-center rounded-full bg-white bg-opacity-80 px-4 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm"
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
@@ -127,7 +127,7 @@ export default function Home() {
               {/* Subheadline */}
               <motion.p
                 variants={itemVariants}
-                className="text-lg text-slate-600 leading-relaxed mb-8 max-w-xl"
+                className="text-lg text-slate-700 leading-relaxed mb-8 max-w-xl"
               >
                 EpiCareHub empowers neurologists and neurosurgeons with interactive 3D brain visualization and AI-driven analysis to make confident surgical decisions for epilepsy patients.
               </motion.p>
@@ -144,7 +144,7 @@ export default function Home() {
                 >
                   <Link
                     to="/login"
-                    className="inline-flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 shadow-md shadow-emerald-600/30 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                    className="inline-flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 shadow-md shadow-emerald-600/40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
                   >
                     Launch EpiCareHub →
                   </Link>
@@ -156,7 +156,7 @@ export default function Home() {
                 >
                   <Link
                     to="/dashboard"
-                    className="inline-flex items-center justify-center rounded-full border-2 border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold px-8 py-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-white bg-white bg-opacity-80 hover:bg-opacity-100 text-emerald-700 font-semibold px-8 py-3 shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
                   >
                     Explore Dashboard
                   </Link>
@@ -164,27 +164,18 @@ export default function Home() {
               </motion.div>
             </motion.div>
 
-            {/* Right Column: Brain Illustration Card */}
+            {/* Right Column: Brain Illustration */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-              className="hidden md:flex md:justify-center"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+              className="hidden md:flex md:justify-center items-center"
             >
-              <motion.div
-                whileHover={{ y: -12 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="relative rounded-3xl border border-emerald-100 bg-white shadow-[0_18px_60px_rgba(15,118,110,0.18)] overflow-hidden w-full max-w-sm h-80"
-              >
-                <div className="absolute top-4 left-4 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full px-3 py-1 z-10">
-                  Live Preview
-                </div>
-                <img
-                  src="/assets/homePhoto.svg"
-                  alt="EEG-based 3D brain localization illustration"
-                  className="h-full w-full object-contain p-4"
-                />
-              </motion.div>
+              <img
+                src="/assets/homePhoto.svg"
+                alt="EEG-based 3D brain localization illustration"
+                className="w-full h-auto max-w-md drop-shadow-xl"
+              />
             </motion.div>
           </div>
         </div>

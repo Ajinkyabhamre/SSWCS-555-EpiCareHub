@@ -1,17 +1,16 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { useTable, useFilters } from "react-table";
 import Snackbar from "@mui/material/Snackbar";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import DataTableComponent from "./DataTableComponent";
 import { Dialog } from "primereact/dialog";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { ConfirmDialog } from "primereact/confirmdialog";
 import axios from "axios";
 import PatientForm from "./PatientForm";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { selectUpload, clearUpload } from "../features/patientSlice";
-import FilePresentIcon from "@mui/icons-material/FilePresent";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 
 const Patients = () => {
   const [data, setData] = useState([]);
@@ -78,14 +77,16 @@ const Patients = () => {
   };
 
   const fetchData = () => {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     let config = {
       method: "post",
       maxBodyLength: Infinity,
-      url: "http://localhost:3000/patients/get",
+      url: `${apiUrl}/patients/get`,
       headers: {},
     };
 
     setLoading(true);
+    setError(null);
 
     axios
       .request(config)
@@ -93,7 +94,7 @@ const Patients = () => {
         setData(response.data);
       })
       .catch((error) => {
-        setError(error);
+        setError(error.message || "Failed to load patients");
       })
       .finally(() => {
         setLoading(false);
@@ -113,11 +114,12 @@ const Patients = () => {
 
   const handleSubmit = useCallback(
     (patient) => {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
       let submitConfig = selectedPatient
         ? {
             method: "put",
             maxBodyLength: Infinity,
-            url: `http://localhost:3000/patients/`,
+            url: `${apiUrl}/patients/`,
             headers: {
               "Content-Type": "application/json",
             },
@@ -126,7 +128,7 @@ const Patients = () => {
         : {
             method: "post",
             maxBodyLength: Infinity,
-            url: "http://localhost:3000/patients/",
+            url: `${apiUrl}/patients/`,
             headers: {
               "Content-Type": "application/json",
             },
@@ -138,13 +140,20 @@ const Patients = () => {
           if (!response.data.success) {
             throw response.data.message || "Error";
           }
-          setMessage(response.data.message);
+          setMessage(response.data.message || "Patient saved successfully");
           fetchData();
           setOpen(true);
           setVisible(false);
+          setSelectedPatient(null);
+          setIsFile(false);
         })
         .catch((error) => {
-          selectedPatient ? setVisible(false) : setError(error);
+          const errorMsg = error.message || "Error saving patient";
+          setMessage(errorMsg);
+          setOpen(true);
+          if (!selectedPatient) {
+            setError(errorMsg);
+          }
         })
         .finally(() => {
           setLoading(false);
@@ -153,10 +162,11 @@ const Patients = () => {
     [selectedPatient]
   );
   const accept = () => {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     let deleteConfig = {
       method: "delete",
       maxBodyLength: Infinity,
-      url: `http://localhost:3000/patients/${selectedPatient._id}`,
+      url: `${apiUrl}/patients/${selectedPatient._id}`,
       headers: {
         "Content-Type": "application/json",
       },
@@ -164,23 +174,23 @@ const Patients = () => {
     axios
       .request(deleteConfig)
       .then((response) => {
-        setMessage("Deleted Successfully");
+        setMessage("Patient deleted successfully");
         fetchData();
         setSelectedPatient(null);
         setOpen(true);
-        setVisible(false);
+        setConfirmDelete(false);
       })
       .catch((error) => {
-        setError(error);
+        const errorMsg = error.message || "Failed to delete patient";
+        setMessage(errorMsg);
+        setOpen(true);
+        setError(errorMsg);
       })
       .finally(() => {
         setLoading(false);
       });
   };
 
-  const reject = () => {
-    // console.log("reject");
-  };
   const handleDeleteClick = useCallback((patient) => {
     setSelectedPatient(patient);
 
@@ -200,144 +210,247 @@ const Patients = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="w-12 h-12 border-t-4 border-r-4 border-b-4 border-l-4 border-gray-900 animate-spin"></div>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center">
+        <div className="rounded-3xl border border-emerald-50 bg-white p-8 text-center">
+          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Loading patients...</p>
+        </div>
       </div>
     );
   }
 
   if (visual) {
     return (
-      <div className="flex justify-center items-center flex-col overflow-hidden font-crete mt-32 bg-eh-4">
-        <h2 className="text-3xl text-center text-white mb-4">
-          Visualizing EEG Data
-        </h2>
-        <p className="text-xl text-center text-white">
-          Please wait while we analyze and visualize the brain activity...
-        </p>
-        <p className="text-xl text-center text-white mb-4">
-          Do not close or refresh the browser
-        </p>
-        <div className="spinner mb-8"></div>
-        {/* <button className="bg-eh-4 text-white px-4 py-2 rounded-lg hover:bg-opacity-80">
-          Cancel Visualization
-        </button> */}
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-4">
+        <div className="rounded-3xl border border-emerald-50 bg-white p-8 max-w-md w-full shadow-[0_18px_60px_rgba(15,118,110,0.10)] text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">
+            Visualizing EEG Data
+          </h2>
+          <p className="text-slate-600 mb-6">
+            Please wait while we analyze and visualize the brain activity...
+          </p>
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+          </div>
+          <p className="text-sm text-slate-500">
+            Do not close or refresh the browser
+          </p>
+        </div>
       </div>
     );
   }
 
-  // if (error) {
-  //   return <div>Error: {error.message}</div>;
-  // }
+  if (error && !data.length) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-4">
+        <div className="rounded-3xl border border-emerald-50 bg-white p-8 max-w-md w-full shadow-sm">
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">
+            Unable to load patients
+          </h2>
+          <p className="text-slate-600 mb-6">
+            {error}. Please try again or contact support if the problem persists.
+          </p>
+          <button
+            onClick={fetchData}
+            className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 transition-all duration-200"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-lg overflow-hidden shadow-lg border border-gray-200 hover:shadow-xl">
-      <div className="flex justify-between p-4">
-        <h3 className="text-2xl font-crete">Patients List - {data?.length}</h3>
-        <button
-          className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
-          onClick={() => {
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 pt-10 pb-16">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+            Patients
+          </h1>
+          <p className="text-slate-600 mb-6">
+            Manage epilepsy patients, upload EEG data, and start localization workflows.
+          </p>
+
+          {/* Header Actions */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => {
+                setSelectedPatient(null);
+                setIsFile(false);
+                setVisible(true);
+              }}
+              className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 transition-all duration-200"
+            >
+              + Add patient
+            </button>
+            <button
+              onClick={fetchData}
+              className="rounded-full border border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold px-6 py-3 transition-all duration-200"
+            >
+              ⟳ Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Summary Strip */}
+        <div className="rounded-2xl border border-emerald-50 bg-white p-4 mb-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                Total Patients
+              </p>
+              <p className="text-2xl font-bold text-emerald-600">
+                {data.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Data Table Card */}
+        <div className="rounded-3xl border border-emerald-50 bg-white p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)]">
+          <div className="mb-6 border-b border-emerald-50 pb-6">
+            <p className="text-lg font-semibold text-slate-900">All patients</p>
+          </div>
+          <DataTableComponent
+            data={data}
+            onEditClick={handleEditClick}
+            onDeleteClick={handleDeleteClick}
+            onUploadClick={handleUploadClick}
+          />
+        </div>
+
+        {/* Add/Edit Patient Dialog */}
+        <Dialog
+          header={selectedPatient ? "Edit patient" : "Add new patient"}
+          visible={visible && !isFile}
+          onHide={() => {
+            setVisible(false);
             setSelectedPatient(null);
-            setVisible(true);
+            setIsFile(false);
+            setSelectedFile(null);
           }}
+          className="w-full md:w-2/3 lg:w-1/2"
         >
-          Add Patient
-        </button>
-      </div>
-      <DataTableComponent
-        data={data}
-        onEditClick={handleEditClick}
-        onDeleteClick={handleDeleteClick}
-        onUploadClick={handleUploadClick}
-      />
-      <Dialog
-        header={
-          isFile
-            ? "Upload EEG Data"
-            : selectedPatient
-            ? "Edit Patient"
-            : "Add Patient"
-        }
-        visible={visible}
-        onHide={() => {
-          setVisible(false);
-          setSelectedFile(null);
-        }}
-      >
-        {isFile ? (
-          <div className="relative flex flex-col items-center">
+          <PatientForm patient={selectedPatient} onSubmit={handleSubmit} />
+        </Dialog>
+
+        {/* EEG Upload Dialog */}
+        <Dialog
+          header={`Upload EEG (.fif) for ${selectedPatient?.firstName || ""} ${selectedPatient?.lastName || ""}`}
+          visible={visible && isFile}
+          onHide={() => {
+            setVisible(false);
+            setSelectedPatient(null);
+            setIsFile(false);
+            setSelectedFile(null);
+          }}
+          className="w-full md:w-2/3 lg:w-1/2"
+        >
+          <div className="space-y-4">
+            <p className="text-slate-600 text-sm">
+              Upload a FIF EEG file to generate a 3D localization visualization for this patient.
+            </p>
+
+            {/* Drag and Drop Area */}
             <div
-              className="mt-2 border cursor-pointer border-eh-4 rounded-md shadow-sm focus:outline-none focus:border-eh-3 focus:ring-eh-3 relative overflow-hidden"
-              id="fileDropArea"
+              className="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 p-8 text-center cursor-pointer hover:bg-emerald-100 transition-colors"
               onDrop={handleFileDrop}
               onDragOver={handleDragOver}
             >
-              <p className="text-center bg-gradient-to-r from-eh-3 to-eh-4 py-8 px-4 text-white">
-                Drag and drop your FIF file here, or click to browse
+              <FileUploadIcon className="mx-auto mb-3 text-emerald-600" style={{ fontSize: "2rem" }} />
+              <p className="text-slate-700 font-medium mb-1">
+                Drag & drop your .fif file here, or click to browse
+              </p>
+              <p className="text-xs text-slate-500 mb-4">
+                Only .fif files are supported
               </p>
               <input
                 id="fileInput"
-                name="fileInput"
                 type="file"
                 accept=".fif"
                 onChange={handleFileChange}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                className="hidden"
               />
+              <button
+                onClick={() => document.getElementById("fileInput").click()}
+                className="text-emerald-600 hover:text-emerald-700 font-semibold text-sm underline"
+              >
+                Browse files
+              </button>
             </div>
+
+            {/* File Preview */}
             {selectedFile && (
-              <div className="mt-4 border flex items-center justify-center border-gray-300 rounded-md p-4 bg-gray-100">
-                <p className="text-sm text-gray-700 mr-2">Selected File:</p>
-                <div className="flex items-center">
-                  <FilePresentIcon className="w-5 h-5 mr-1 text-eh-4" />
-                  <p className="text-sm text-gray-900">{selectedFile.name}</p>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileUploadIcon className="text-emerald-600" />
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setSelectedFile(null)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
               </div>
             )}
 
-            {/* <button
-              className="bg-eh-4 mt-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 disabled:cursor-not-allowed"
-              type="button"
+            {/* Submit Button */}
+            <button
               onClick={handleFileSubmit}
               disabled={!selectedFile}
+              className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 transition-all duration-200"
             >
-              Upload File
-            </button> */}
+              Start analysis
+            </button>
           </div>
-        ) : (
-          <PatientForm patient={selectedPatient} onSubmit={handleSubmit} />
-        )}
-      </Dialog>
-      <Snackbar
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-        message={message}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleClose}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-      />
-      <ConfirmDialog
-        group="declarative"
-        visible={confirmDelete}
-        onHide={() => setConfirmDelete(false)}
-        message={`Are you sure you want to delete ${
-          selectedPatient?.firstName || "this patient"
-        }?`}
-        header="Confirmation"
-        icon="pi pi-exclamation-triangle"
-        accept={accept}
-        reject={reject}
-        style={{ width: "50vw" }}
-        breakpoints={{ "1100px": "75vw", "960px": "100vw" }}
-      />
+        </Dialog>
+
+        {/* Snackbar */}
+        <Snackbar
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          open={open}
+          autoHideDuration={3000}
+          onClose={handleClose}
+          message={message}
+          action={
+            <IconButton
+              size="small"
+              aria-label="close"
+              color="inherit"
+              onClick={handleClose}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          }
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          group="declarative"
+          visible={confirmDelete}
+          onHide={() => {
+            setConfirmDelete(false);
+            setSelectedPatient(null);
+          }}
+          message={`Are you sure you want to delete ${selectedPatient?.firstName || ""} ${selectedPatient?.lastName || ""}? This action cannot be undone.`}
+          header="Delete patient"
+          icon="pi pi-exclamation-triangle"
+          accept={accept}
+          reject={() => setConfirmDelete(false)}
+          style={{ width: "50vw" }}
+          breakpoints={{ "1100px": "75vw", "960px": "100vw" }}
+        />
+      </div>
     </div>
   );
 };

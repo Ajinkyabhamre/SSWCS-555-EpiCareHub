@@ -1,32 +1,60 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import Home from '../components/Home.jsx';
 
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  takeRecords() {
+    return [];
+  }
+  unobserve() {}
+};
+
 describe("Home component", () => {
-  it("renders welcome message and description", () => {
-    render(<Home />);
+  it("renders main headline", () => {
+    render(<MemoryRouter><Home /></MemoryRouter>);
 
-    // Check if the welcome message is rendered
-    expect(screen.getByText(/welcome to the presurgical epilepsy evaluation platform/i)).toBeInTheDocument();
-
-    // Check if the description is rendered
-    expect(screen.getByText(/this web application platform is designed to assist doctors in accurately locating epileptic seizure areas in epilepsy patients' brains/i)).toBeInTheDocument();
-
-    // Check if the paragraph with the text-gray-700 class is rendered
-    expect(screen.getByText(/by utilizing advanced 3d visualization techniques, doctors can interact with reconstructed brain models, enabling them to pinpoint areas of abnormal brain activity associated with epilepsy/i)).toBeInTheDocument();
+    // Check if the main headline is rendered
+    expect(screen.getByText(/pinpoint seizure sources with confidence/i)).toBeInTheDocument();
   });
 
-  it("renders image with alt text", () => {
-    render(<Home />);
+  it("renders feature cards", () => {
+    render(<MemoryRouter><Home /></MemoryRouter>);
+
+    // Check if feature cards are rendered
+    expect(screen.getByText(/What EpiCareHub helps you do/i)).toBeInTheDocument();
+  });
+
+  it("renders how it works section", () => {
+    render(<MemoryRouter><Home /></MemoryRouter>);
+
+    // Check if the how it works section is rendered
+    expect(screen.getByText(/How it works/i)).toBeInTheDocument();
+    expect(screen.getByText(/Upload EEG Data/i)).toBeInTheDocument();
+    expect(screen.getByText(/Run Localization/i)).toBeInTheDocument();
+    expect(screen.getByText(/Review & Plan/i)).toBeInTheDocument();
+  });
+
+  it("renders CTA buttons", () => {
+    render(<MemoryRouter><Home /></MemoryRouter>);
+
+    // Check if the CTA buttons are rendered
+    expect(screen.getByText(/Launch EpiCareHub/i)).toBeInTheDocument();
+    expect(screen.getByText(/Explore Dashboard/i)).toBeInTheDocument();
+  });
+
+  it("renders brain illustration with correct alt text", () => {
+    render(<MemoryRouter><Home /></MemoryRouter>);
 
     // Check if the image is rendered
-    const image = screen.getByAltText("home");
+    const image = screen.getByAltText(/eeg-based 3d brain localization illustration/i);
     expect(image).toBeInTheDocument();
 
     // Check if the image source is correct
-    expect(image).toHaveAttribute("src", "./public/assets/homePhoto.svg");
-
-    // Check if the image has the correct class
-    expect(image).toHaveClass("w-full", "md:w-auto", "max-h-96");
+    expect(image).toHaveAttribute("src", "/assets/homePhoto.svg");
   });
 });

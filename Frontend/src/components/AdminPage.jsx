@@ -29,12 +29,11 @@ const AdminPage = () => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Hardcoded credentials for demonstration
-    if (login.username === 'admin' && login.password === 'adminpass') {
-      setIsLoggedIn(true);
-    } else {
-      alert('Invalid credentials');
-    }
+    // TODO: Integrate with backend authentication
+    // This should validate against secure backend endpoint
+    // DO NOT hardcode credentials in frontend
+    console.warn('Admin login needs backend integration');
+    alert('Admin authentication requires backend setup');
   };
 
   const handleLoginChange = (e) => {

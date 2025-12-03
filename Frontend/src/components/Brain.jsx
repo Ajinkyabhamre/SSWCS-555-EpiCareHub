@@ -126,8 +126,8 @@ const BrainModel = ({ onClick }) => {
 
 const Brain = () => {
   const handleClick = (event) => {
-    console.log("Clicked on the brain model!", event);
-    // Add your logic here for handling the click event
+    // Handle click event on brain model
+    // Add your logic here
   };
   return (
     <div className="brain-canvas">

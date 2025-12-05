@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "migrate:eegStudies": "node scripts/migrateEegVisualsToStudies.js"
   },
   "author": "team-10",
   "license": "MIT",

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { TextField, Button } from "@mui/material";
-import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import moment from "moment";
+import { motion } from "framer-motion";
 
 const PatientForm = ({ onSubmit, patient }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +12,7 @@ const PatientForm = ({ onSubmit, patient }) => {
     email: "",
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (patient) {
@@ -32,6 +32,10 @@ const PatientForm = ({ onSubmit, patient }) => {
       ...formData,
       [name]: value,
     });
+    // Clear field error when user types
+    if (fieldErrors[name]) {
+      setFieldErrors({ ...fieldErrors, [name]: "" });
+    }
   };
 
   const genderOptions = [
@@ -94,87 +98,133 @@ const PatientForm = ({ onSubmit, patient }) => {
   };
 
   return (
-    <div className="flex justify-center">
-      <form
-        className="form-container flex flex-col p-5 gap-4"
-        onSubmit={handleSubmit}
-      >
+    <div className="p-2">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          >
+            {error}
+          </motion.div>
+        )}
+
+        {/* First Name */}
         <div>
-          <TextField
+          <label
+            htmlFor="firstName"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
+          >
+            First Name <span className="text-rose-500">*</span>
+          </label>
+          <input
             id="firstName"
-            label="First Name"
             type="text"
             name="firstName"
             value={formData.firstName}
             onChange={handleChange}
+            placeholder="Enter first name"
             required
+            className="w-full rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
           />
         </div>
+
+        {/* Last Name */}
         <div>
-          <TextField
+          <label
+            htmlFor="lastName"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
+          >
+            Last Name <span className="text-rose-500">*</span>
+          </label>
+          <input
             id="lastName"
-            label="Last Name"
             type="text"
             name="lastName"
             value={formData.lastName}
             onChange={handleChange}
+            placeholder="Enter last name"
             required
+            className="w-full rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
           />
         </div>
+
+        {/* Date of Birth */}
         <div>
-          <TextField
+          <label
+            htmlFor="dob"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
+          >
+            Date of Birth <span className="text-rose-500">*</span>
+          </label>
+          <input
             id="dob"
-            label="Date of Birth"
             type="date"
             name="dob"
             value={formData.dob}
             onChange={handleChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-            inputProps={{
-              max: moment().format("YYYY-MM-DD"),
-            }}
+            max={moment().format("YYYY-MM-DD")}
             required
+            className="w-full rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
           />
         </div>
+
+        {/* Gender */}
         <div>
-          <FormControl fullWidth>
-            <InputLabel id="gender-label">Gender</InputLabel>
-            <Select
-              labelId="gender-label"
-              id="gender"
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              required
-            >
-              {genderOptions.map((option) => (
-                <MenuItem key={option.value} value={option.label}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <label
+            htmlFor="gender"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
+          >
+            Gender <span className="text-rose-500">*</span>
+          </label>
+          <select
+            id="gender"
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+            required
+            className="w-full rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="">Select gender</option>
+            {genderOptions.map((option) => (
+              <option key={option.value} value={option.label}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
+
+        {/* Email */}
         <div>
-          <TextField
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
+          >
+            Email Address <span className="text-rose-500">*</span>
+          </label>
+          <input
             id="email"
-            label="Email"
-            type="text"
+            type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
+            placeholder="patient@example.com"
             required
+            className="w-full rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
           />
         </div>
-        <div className="todo-errors">{error && <span>{error}</span>}</div>
-        <button
-          className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
-          type="submit"
-        >
-          {patient ? "Update " : "Add"}
-        </button>
+
+        {/* Submit Button */}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="submit"
+            className="flex-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 shadow-md shadow-emerald-600/40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+          >
+            {patient ? "Update Patient" : "Add Patient"}
+          </button>
+        </div>
       </form>
     </div>
   );

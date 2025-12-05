@@ -35,6 +35,7 @@ const PatientDetails = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
+  const [studies, setStudies] = useState([]); // PHASE 3: Track EEG studies
 
   const handleFileDrop = (event) => {
     event.preventDefault();
@@ -102,70 +103,114 @@ const PatientDetails = () => {
     setSelectedFile(file);
   };
 
-  const handleFileSubmit = () => {
-    if (selectedFile) {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("patientId", patient._id);
-      setVisual(true);
+  const handleFileSubmit = async () => {
+    if (!selectedFile) {
+      setMessage("No file selected.");
+      setVisible(true);
+      return;
+    }
 
+    setVisual(true);
+
+    try {
+      // ====================================================
+      // PHASE 3 STEP 1: Create study in Node backend first
+      // ====================================================
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
+      console.log("[PHASE 3] Creating study record...");
+      const studyResponse = await axios.post(
+        `${apiUrl}/patients/${patient._id}/studies`,
+        {
+          title: "Baseline EEG",
+          status: "PROCESSING",
+        }
+      );
+
+      const createdStudy = studyResponse.data.study;
+      const uploadId = createdStudy.uploadId;
+
+      console.log(`[PHASE 3] Study created with uploadId: ${uploadId}`);
+
+      // ====================================================
+      // PHASE 3 STEP 2: Call Python with uploadId
+      // ====================================================
       const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
       const devMode = import.meta.env.VITE_EPICARE_DEV_MODE === "true";
 
-      // Use dev endpoint if dev mode is enabled
       const endpoint = devMode ? "/visualize_brain_dev" : "/visualize_brain";
 
       if (devMode) {
         console.log("[DEV MODE] Using dev endpoint:", endpoint);
       }
 
-      axios
-        .post(`${pythonApiUrl}${endpoint}`, formData)
-        .then((response) => {
-          const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-          let config = {
-            method: "get",
-            maxBodyLength: Infinity,
-            url: `${apiUrl}/patients/${id}`,
-            headers: {},
-          };
-          axios
-            .request(config)
-            .then((response) => {
-              setPatient(response.data);
-              const tempPatient = response.data;
-              setIsEpilepsy(tempPatient.isEpilepsy);
-              setComments(tempPatient.comments);
-              if (
-                !selectedUpload &&
-                tempPatient.eegVisuals &&
-                tempPatient.eegVisuals.length > 0
-              )
-                dispatch(
-                  selectUpload(
-                    tempPatient.eegVisuals[tempPatient.eegVisuals.length - 1]
-                  )
-                );
-            })
-            .catch((error) => {
-              console.log(error);
-            });
-          setSelectedFile(null);
-          setVisible(false);
-        })
-        .catch((error) => {
-          console.error("Error uploading file:", error);
-          setMessage("Error uploading file.");
-          setVisible(true);
-        })
-        .finally(() => {
-          setVisual(false);
-        });
-    } else {
-      setMessage("No file selected.");
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("patientId", patient._id);
+      formData.append("uploadId", uploadId); // PHASE 3: Include uploadId
+
+      console.log(`[PHASE 3] Calling Python ${endpoint} with uploadId: ${uploadId}`);
+
+      await axios.post(`${pythonApiUrl}${endpoint}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      console.log("[PHASE 3] Python processing initiated successfully");
+
+      // ====================================================
+      // PHASE 3 STEP 3: Refresh patient data
+      // ====================================================
+      const patientResponse = await axios.get(`${apiUrl}/patients/${id}`);
+      setPatient(patientResponse.data);
+      const tempPatient = patientResponse.data;
+      setIsEpilepsy(tempPatient.isEpilepsy);
+      setComments(tempPatient.comments);
+
+      if (
+        !selectedUpload &&
+        tempPatient.eegVisuals &&
+        tempPatient.eegVisuals.length > 0
+      ) {
+        dispatch(
+          selectUpload(
+            tempPatient.eegVisuals[tempPatient.eegVisuals.length - 1]
+          )
+        );
+      }
+
+      // Refresh studies list
+      const studiesResponse = await axios.get(`${apiUrl}/patients/${id}/studies`);
+      if (studiesResponse.data.success && studiesResponse.data.studies) {
+        setStudies(studiesResponse.data.studies);
+      }
+
+      setSelectedFile(null);
+      setVisible(false);
+    } catch (error) {
+      console.error("[PHASE 3] Error in upload flow:", error);
+
+      let errorMessage = "Error uploading file.";
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setMessage(errorMessage);
       setVisible(true);
+    } finally {
+      setVisual(false);
     }
   };
+
+  // PHASE 3: Helper to get study status for an uploadId
+  const getStudyStatus = useCallback(
+    (uploadId) => {
+      const study = studies.find((s) => s.uploadId === uploadId);
+      return study?.status || null;
+    },
+    [studies]
+  );
 
   const viewTemplate = useCallback(
     (image) => {
@@ -195,6 +240,8 @@ const PatientDetails = () => {
 
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
+    // Fetch patient data
     let config = {
       method: "get",
       maxBodyLength: Infinity,
@@ -221,6 +268,18 @@ const PatientDetails = () => {
       })
       .catch((error) => {
         console.error('Error fetching patient data:', error);
+      });
+
+    // PHASE 3: Fetch studies data
+    axios
+      .get(`${apiUrl}/patients/${id}/studies`)
+      .then((response) => {
+        if (response.data.success && response.data.studies) {
+          setStudies(response.data.studies);
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching studies:', error);
       });
   }, [dispatch, id, selectedUpload]);
 
@@ -465,9 +524,25 @@ const PatientDetails = () => {
                         {index + 1}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-slate-900">
-                          Study {index + 1}
-                        </h4>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-slate-900">
+                            Study {index + 1}
+                          </h4>
+                          {/* PHASE 3: Display status badge */}
+                          {getStudyStatus(visual.uploadId) && (
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                getStudyStatus(visual.uploadId) === "COMPLETED"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : getStudyStatus(visual.uploadId) === "PROCESSING"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-rose-100 text-rose-700"
+                              }`}
+                            >
+                              {getStudyStatus(visual.uploadId)}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <span>{visual?.uploadDate || "N/A"}</span>
                           {visual?.rootPath && (

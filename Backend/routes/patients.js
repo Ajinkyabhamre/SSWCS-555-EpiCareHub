@@ -216,7 +216,7 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
     patientUpdateSuccess = true;
 
     // ====================================================
-    // STEP 2: Update or create eegStudies document (NEW)
+    // STEP 2: Update or create eegStudies document (PHASE 3)
     // ====================================================
     try {
       // Check if study already exists
@@ -228,7 +228,19 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
       const now = new Date();
 
       if (existingStudy) {
-        // Update existing study
+        // PHASE 3: Update existing study from PROCESSING → COMPLETED
+        console.log(
+          `[/patients/upload] Updating existing study: uploadId=${uploadId}, status: ${existingStudy.status} → COMPLETED`
+        );
+
+        // Calculate processing time if the study has an uploadDate
+        let processingTime = null;
+        if (existingStudy.uploadDate) {
+          processingTime = Math.round(
+            (now - new Date(existingStudy.uploadDate)) / 1000
+          ); // seconds
+        }
+
         await eegStudiesData.updateProcessingResults(uploadId, {
           status: "COMPLETED",
           completionDate: now,
@@ -241,9 +253,18 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
             modelVersion: null,
             mneVersion: null,
           },
+          processingTime: processingTime,
         });
+
+        console.log(
+          `[/patients/upload] ✓ Study updated to COMPLETED (processing time: ${processingTime}s)`
+        );
       } else {
-        // Create new study
+        // Backward compatibility: Create new study if none exists
+        console.log(
+          `[/patients/upload] No existing study found for uploadId=${uploadId}, creating new study with COMPLETED status`
+        );
+
         await eegStudiesData.createStudy({
           patientId: patientId,
           uploadId: uploadId || `manual-${Date.now()}`, // Fallback if no uploadId
@@ -260,12 +281,14 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
             mneVersion: null,
           },
         });
+
+        console.log(`[/patients/upload] ✓ New study created with COMPLETED status`);
       }
       studyUpdateSuccess = true;
     } catch (studyError) {
       // Log error but don't fail the entire request
       console.error(
-        `[/patients/upload] Failed to update eegStudies for uploadId ${uploadId}:`,
+        `[/patients/upload] ✗ Failed to update eegStudies for uploadId ${uploadId}:`,
         studyError.message
       );
       // Continue - patient update succeeded, which is the critical part

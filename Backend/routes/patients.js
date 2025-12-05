@@ -1,6 +1,6 @@
 import { Router } from "express";
 const router = Router();
-import { patientsData } from "../data/index.js";
+import { patientsData, eegStudiesData } from "../data/index.js";
 import {
   checkIsProperString,
   isDateValid,
@@ -39,7 +39,7 @@ router
         message: error.message,
         success: false,
       };
-      return res.status(404).json(result);
+      return res.status(400).json(result);
     }
 
     try {
@@ -63,7 +63,7 @@ router
         message: error.message,
         success: false,
       };
-      return res.status(404).json(result);
+      return res.status(400).json(result);
     }
   })
   .delete(async (req, res) => {
@@ -180,7 +180,7 @@ router
 // Python → Node callback endpoint (protected by API key middleware)
 router.route("/upload").post(validateInternalApiKey, async (req, res) => {
   // let patientId = req.body.patientId;
-  let { patientId, ...newEEGObject } = req.body; // Get the patient ID from the request body
+  let { patientId, uploadId, figUrl, matUrl, images, metadata, ...otherFields } = req.body;
 
   try {
     patientId = validateId(patientId, "patient Id");
@@ -188,20 +188,102 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 
+  // Keep track of what succeeded for error reporting
+  let patientUpdateSuccess = false;
+  let studyUpdateSuccess = false;
+
   try {
+    // ====================================================
+    // STEP 1: Update patient.eegVisuals (existing behavior)
+    // ====================================================
     const getPatient = await patientsData.getPaitentById(patientId);
     if (!getPatient.eegVisuals) getPatient.eegVisuals = [];
-    newEEGObject.uploadDate = moment().format("MM/DD/YYYY");
+
+    // Build the eegVisuals entry (same as before)
+    const newEEGObject = {
+      uploadId,
+      figUrl,
+      matUrl,
+      images,
+      uploadDate: moment().format("MM/DD/YYYY"),
+      ...otherFields, // Include any other fields Python might send
+    };
+
     getPatient.eegVisuals.push(newEEGObject);
     const { _id, ...allDetails } = getPatient;
 
-    const updatePatient = await patientsData.updatePatientInfo(
-      patientId,
-      allDetails
-    );
-    return res.status(200).send("Opertaion Succefull");
+    await patientsData.updatePatientInfo(patientId, allDetails);
+    patientUpdateSuccess = true;
+
+    // ====================================================
+    // STEP 2: Update or create eegStudies document (NEW)
+    // ====================================================
+    try {
+      // Check if study already exists
+      let existingStudy = null;
+      if (uploadId) {
+        existingStudy = await eegStudiesData.findByUploadId(uploadId);
+      }
+
+      const now = new Date();
+
+      if (existingStudy) {
+        // Update existing study
+        await eegStudiesData.updateProcessingResults(uploadId, {
+          status: "COMPLETED",
+          completionDate: now,
+          figureUrls: {
+            topomap: figUrl || null,
+            brainViews: images || [],
+            annotated: [], // Future enhancement
+          },
+          metadata: metadata || {
+            modelVersion: null,
+            mneVersion: null,
+          },
+        });
+      } else {
+        // Create new study
+        await eegStudiesData.createStudy({
+          patientId: patientId,
+          uploadId: uploadId || `manual-${Date.now()}`, // Fallback if no uploadId
+          status: "COMPLETED",
+          uploadDate: now,
+          completionDate: now,
+          figureUrls: {
+            topomap: figUrl || null,
+            brainViews: images || [],
+            annotated: [],
+          },
+          metadata: metadata || {
+            modelVersion: null,
+            mneVersion: null,
+          },
+        });
+      }
+      studyUpdateSuccess = true;
+    } catch (studyError) {
+      // Log error but don't fail the entire request
+      console.error(
+        `[/patients/upload] Failed to update eegStudies for uploadId ${uploadId}:`,
+        studyError.message
+      );
+      // Continue - patient update succeeded, which is the critical part
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Operation Successful",
+      patientUpdated: patientUpdateSuccess,
+      studyUpdated: studyUpdateSuccess,
+    });
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    return res.status(400).json({
+      success: false,
+      error: error.message,
+      patientUpdated: patientUpdateSuccess,
+      studyUpdated: studyUpdateSuccess,
+    });
   }
 });
 

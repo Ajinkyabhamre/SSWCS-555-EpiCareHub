@@ -22,6 +22,12 @@ if (!process.env.EPICARE_INTERNAL_API_KEY) {
   );
 }
 
+if (!process.env.ADMIN_REGISTRATION_SECRET) {
+  console.warn(
+    "[WARNING] ADMIN_REGISTRATION_SECRET is not set. Admin registration will always fail."
+  );
+}
+
 app.listen(PORT, () => {
   console.log("We've now got a server!");
   console.log(`Your routes will be running on http://localhost:${PORT}`);

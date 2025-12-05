@@ -7,7 +7,8 @@ import { selectUpload, clearUpload } from "../features/patientSlice";
 import { useDispatch } from "react-redux";
 import { Carousel } from "primereact/carousel";
 import { Tag } from "primereact/tag";
-import FilePresentIcon from "@mui/icons-material/FilePresent";
+import { motion } from "framer-motion";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import noImage from "/image.png";
 import PDFGenerator from "./PDFGenerator";
 
@@ -38,7 +39,6 @@ const PatientDetails = () => {
   const handleFileDrop = (event) => {
     event.preventDefault();
     event.target.files = event.dataTransfer.files;
-
     handleFileChange(event);
   };
 
@@ -96,6 +96,7 @@ const PatientDetails = () => {
         setVisual(false);
       });
   }, []);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
@@ -109,9 +110,17 @@ const PatientDetails = () => {
       setVisual(true);
 
       const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
+      const devMode = import.meta.env.VITE_EPICARE_DEV_MODE === "true";
+
+      // Use dev endpoint if dev mode is enabled
+      const endpoint = devMode ? "/visualize_brain_dev" : "/visualize_brain";
+
+      if (devMode) {
+        console.log("[DEV MODE] Using dev endpoint:", endpoint);
+      }
 
       axios
-        .post(`${pythonApiUrl}/visualize_brain`, formData)
+        .post(`${pythonApiUrl}${endpoint}`, formData)
         .then((response) => {
           const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
           let config = {
@@ -161,20 +170,23 @@ const PatientDetails = () => {
   const viewTemplate = useCallback(
     (image) => {
       return (
-        <div className="border-1 surface-border border-round text-center h-fit">
+        <div className="border border-emerald-100 rounded-2xl text-center">
           <div className="mb-3">
             <img
-              className="w-full h-60 object-cover object-center"
+              className="w-full h-60 object-cover object-center rounded-t-2xl"
               src={image}
               onError={(e) => {
                 e.target.src = noImage;
               }}
+              alt="Brain visualization"
             />
           </div>
-          <Tag
-            value={views.find((view) => image.includes(view))}
-            severity="success"
-          ></Tag>
+          <div className="pb-3">
+            <Tag
+              value={views.find((view) => image.includes(view))}
+              severity="success"
+            />
+          </div>
         </div>
       );
     },
@@ -214,213 +226,363 @@ const PatientDetails = () => {
 
   if (visual) {
     return (
-      <div className="flex justify-center items-center flex-col overflow-hidden font-crete mt-32 bg-eh-4">
-        <h2 className="text-3xl text-center text-white mb-4">
-          Visualizing EEG Data
-        </h2>
-        <p className="text-xl text-center text-white">
-          Please wait while we analyze and visualize the brain activity...
-        </p>
-        <p className="text-xl text-center text-white mb-4">
-          Do not close or refresh the browser
-        </p>
-        <div className="spinner mb-8"></div>
-        {/* <button className="bg-eh-4 text-white px-4 py-2 rounded-lg hover:bg-opacity-80">
-          Cancel Visualization
-        </button> */}
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-4">
+        <div className="rounded-3xl border border-emerald-50 bg-white p-8 max-w-md w-full shadow-[0_18px_60px_rgba(15,118,110,0.10)] text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">
+            Visualizing EEG Data
+          </h2>
+          <p className="text-slate-600 mb-6">
+            Please wait while we analyze and visualize the brain activity...
+          </p>
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+          </div>
+          <p className="text-sm text-slate-500">
+            Do not close or refresh the browser
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center">
+        <div className="rounded-3xl border border-emerald-50 bg-white p-8 text-center">
+          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Loading patient details...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      {patient && (
-        <div className="grid gap-2 px-4 py-2 bg-gray-200 h-[90.5vh]">
-          <div className="flex justify-between items-center px-4 bg-white shadow-sm rounded-md row-span-1">
-            <span className="text-3xl font-bold mx-4">
-              {patient.firstName} {patient.lastName}
-            </span>
-            <div className="flex gap-2">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 pt-10 pb-16">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-2xl border border-emerald-50 bg-white p-6 shadow-sm mb-8"
+        >
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900 mb-1">
+                  {patient.firstName} {patient.lastName}
+                </h1>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">
+                    Patient ID: {patient._id?.slice(-8)}
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                      patient.isEpilepsy
+                        ? "bg-rose-100 text-rose-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {patient.isEpilepsy ? "Epilepsy" : "Non-epilepsy"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
               <PDFGenerator patient={patient} currentReport={selectedUpload} />
-              <div className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded w-fit">
-                <Link to={"/patients"}>Go Back to Patients List</Link>
-              </div>
+              <Link
+                to="/patients"
+                className="inline-flex items-center rounded-full border-2 border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold px-6 py-2 transition-all duration-200"
+              >
+                ← Back to Patients
+              </Link>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 row-span-2 px-10">
-            <div
-              className={`shadow-sm rounded-lg flex flex-col justify-center text-white items-center ${
-                patient.isEpilepsy ? "bg-eh-15" : "bg-eh-10"
-              }`}
+        </motion.div>
+
+        {/* Patient Info Cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+        >
+          <div className="rounded-2xl border border-emerald-50 bg-white p-6 shadow-sm text-center">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+              Age
+            </p>
+            <p className="text-2xl font-bold text-emerald-600">{patient.age}</p>
+          </div>
+          <div className="rounded-2xl border border-emerald-50 bg-white p-6 shadow-sm text-center">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+              Gender
+            </p>
+            <p className="text-2xl font-bold text-emerald-600">{patient.gender}</p>
+          </div>
+          <div className="rounded-2xl border border-emerald-50 bg-white p-6 shadow-sm text-center">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+              Date of Birth
+            </p>
+            <p className="text-sm font-bold text-emerald-600">{patient.dob}</p>
+          </div>
+          <div className="rounded-2xl border border-emerald-50 bg-white p-6 shadow-sm text-center overflow-hidden">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+              Email
+            </p>
+            <p className="text-sm font-bold text-emerald-600 truncate">{patient.email}</p>
+          </div>
+        </motion.div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Brain Visualization - Left Column (2/3 width) */}
+          {selectedUpload && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="lg:col-span-2 rounded-3xl border border-emerald-50 bg-white p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)]"
             >
-              <span>Epilepsy</span>
-              <span className="text-xl font-bold">
-                {patient.isEpilepsy ? "Yes" : "No"}
-              </span>
-            </div>
-            <div className="p-4 bg-white shadow-sm rounded-lg flex flex-col justify-center items-center">
-              <span>Age</span>
-              <span className="text-xl font-bold">{patient.age}</span>
-            </div>
-            <div className="p-4 bg-white shadow-sm rounded-lg flex flex-col justify-center items-center">
-              <span>Gender</span>
-              <span className="text-xl font-bold">{patient.gender}</span>
-            </div>
-            <div className="p-4 bg-white shadow-sm rounded-lg flex flex-col justify-center items-center">
-              <span>Date of Birth</span>
-              <span className="text-xl font-bold">{patient.dob}</span>
-            </div>
-            <div className="p-4 bg-white shadow-sm rounded-lg flex flex-col justify-center overflow-x-scroll">
-              <span className="text-center">Email</span>
-              <div className="text-xl font-bold ">{patient.email}</div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 row-span-5">
-            <div className="flex gap-2">
-              {selectedUpload && (
-                <div className="p-4 bg-white shadow-md rounded-lg w-3/4 max-h-fit">
-                  <h2 className="text-xl mb-2 text-gray-800">
-                    Latest EEG Visuals
-                  </h2>
-                  <Carousel
-                    value={selectedUpload?.images}
-                    numVisible={2}
-                    numScroll={2}
-                    itemTemplate={viewTemplate}
-                  />
-                </div>
-              )}
-              <div className="bg-white shadow-md rounded-lg p-4  w-1/2 flex flex-col gap-2 justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl mb-1 text-gray-800">Epilepsy:</h2>
-                  <div className="border-gray-300 rounded cursor-pointer border flex w-fit h-fit">
-                    <div
-                      className={`border-gray-300 rounded px-4 py-2 ${
-                        isEpilepsy && "bg-eh-4 text-white"
-                      } hover:bg-eh-3 hover:text-white`}
-                      onClick={() => setIsEpilepsy(true)}
-                    >
-                      Yes
-                    </div>
-                    <div
-                      className={`border-gray-300 rounded px-4 py-2 ${
-                        !isEpilepsy && "bg-eh-4 text-white"
-                      } px-2  hover:bg-eh-3 hover:text-white`}
-                      onClick={() => setIsEpilepsy(false)}
-                    >
-                      No
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl mb-1 text-gray-800">Comments:</h2>
-                  <div className="border w-full border-gray-300 rounded overflow-hidden">
-                    <textarea
-                      className="p-2 w-full h-32 resize-none outline-none"
-                      placeholder="Enter comments here..."
-                      value={comments}
-                      onChange={(e) => setComments(e.target.value)}
-                    ></textarea>
-                  </div>
-                </div>
-                <div className="flex justify-around items-center">
-                  <button
-                    className="bg-eh-4 h-fit hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => setVisible(true)}
-                  >
-                    Upload EEG Data
-                  </button>
-                  <button
-                    className="bg-eh-4 h-fit hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => handleSubmit(patient)}
-                  >
-                    Update Data
-                  </button>
-                </div>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-slate-900 mb-1">
+                  Brain Visualization
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Latest EEG localization results across multiple views
+                </p>
+              </div>
+              <Carousel
+                value={selectedUpload?.images}
+                numVisible={2}
+                numScroll={1}
+                itemTemplate={viewTemplate}
+                className="patient-details-carousel"
+              />
+            </motion.div>
+          )}
+
+          {/* Patient Controls - Right Column (1/3 width) */}
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="space-y-6"
+          >
+            {/* Epilepsy Status Card */}
+            <div className="rounded-3xl border border-emerald-50 bg-white p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)]">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Diagnosis Status
+              </h3>
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => setIsEpilepsy(true)}
+                  className={`flex-1 rounded-xl px-4 py-3 font-semibold transition-all duration-200 ${
+                    isEpilepsy
+                      ? "bg-rose-600 text-white shadow-md"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Epilepsy
+                </button>
+                <button
+                  onClick={() => setIsEpilepsy(false)}
+                  className={`flex-1 rounded-xl px-4 py-3 font-semibold transition-all duration-200 ${
+                    !isEpilepsy
+                      ? "bg-emerald-600 text-white shadow-md"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Non-epilepsy
+                </button>
+              </div>
+
+              {/* Comments Section */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Clinical Comments
+                </label>
+                <textarea
+                  className="w-full rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-3 text-sm resize-none outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all"
+                  placeholder="Enter clinical observations, notes, or recommendations..."
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => setVisible(true)}
+                  className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 transition-all duration-200 shadow-md shadow-emerald-600/40"
+                >
+                  Upload New EEG
+                </button>
+                <button
+                  onClick={() => handleSubmit(patient)}
+                  className="w-full rounded-full border-2 border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold px-6 py-3 transition-all duration-200"
+                >
+                  Save Changes
+                </button>
               </div>
             </div>
-            <div className="p-4 bg-white shadow-md rounded-lg h-full flex flex-col">
-              <h2 className="text-xl mb-2 text-gray-800">
-                Previous EEG Uploads
-              </h2>
-              <div className="border-b-2 border-gray-300 mb-4"></div>
-              <div className="gap-2 flex flex-col overflow-y-scroll h-full">
-                {patient.eegVisuals && patient.eegVisuals.length > 0 ? (
-                  patient.eegVisuals.map((visual, index) => (
-                    <div
-                      className="flex justify-between items-center px-4"
-                      key={visual.uploadId}
-                      onClick={() => dispatch(selectUpload(visual))}
-                    >
-                      <div className="flex justify-between items-center py-2 px-4 w-full mr-4 hover:bg-eh-3 cursor-pointer">
-                        <h4>Visual {index + 1}</h4>
-                        <span>{visual?.uploadDate}</span>
-                        <span>{visual?.rootPath}</span>
-                      </div>
-                      <button
-                        className="bg-eh-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded"
-                        onClick={() => handleVisualize(visual.uploadId)}
-                      >
-                        Visualize
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div>No previous uploads</div>
-                )}
-              </div>
-            </div>
-          </div>
+          </motion.div>
         </div>
-      )}
+
+        {/* Previous EEG Uploads Section */}
+        {/* TODO(phase3): Update this section to display studies from eegStudies collection instead of eegVisuals */}
+        {/* TODO(phase3): Each study card should show: upload date, status, summary stats, and link to dedicated study view */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          className="mt-6 rounded-3xl border border-emerald-50 bg-white p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)]"
+        >
+          <div className="mb-6 pb-4 border-b border-emerald-50">
+            <h2 className="text-xl font-semibold text-slate-900 mb-1">
+              Previous EEG Uploads
+            </h2>
+            <p className="text-sm text-slate-600">
+              View and re-run historical EEG analyses for this patient
+            </p>
+          </div>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {patient.eegVisuals && patient.eegVisuals.length > 0 ? (
+              patient.eegVisuals.map((visual, index) => (
+                <div
+                  key={visual.uploadId}
+                  className={`rounded-2xl border p-4 cursor-pointer transition-all duration-200 ${
+                    selectedUpload?.uploadId === visual.uploadId
+                      ? "border-emerald-300 bg-emerald-50 shadow-sm"
+                      : "border-emerald-100 bg-white hover:border-emerald-200 hover:bg-emerald-50/50"
+                  }`}
+                  onClick={() => dispatch(selectUpload(visual))}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-900">
+                          Study {index + 1}
+                        </h4>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <span>{visual?.uploadDate || "N/A"}</span>
+                          {visual?.rootPath && (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-xs truncate max-w-[200px]">
+                                {visual.rootPath}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleVisualize(visual.uploadId);
+                      }}
+                      className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-2 transition-all duration-200 whitespace-nowrap"
+                    >
+                      Re-run Analysis
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">📊</div>
+                <p className="text-slate-600 mb-2">No previous uploads</p>
+                <p className="text-sm text-slate-500">
+                  Upload an EEG file to start visualization
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* EEG Upload Dialog */}
       <Dialog
-        header={"Upload EEG Data"}
+        header="Upload EEG Data"
         visible={visible}
         onHide={() => {
           setVisible(false);
           setSelectedFile(null);
         }}
+        className="w-full md:w-2/3 lg:w-1/2"
       >
-        <div className="relative flex flex-col items-center">
+        <div className="space-y-4">
+          <p className="text-slate-600 text-sm">
+            Upload a FIF EEG file to generate a 3D localization visualization for this patient.
+          </p>
+
+          {/* Drag and Drop Area */}
           <div
-            className="mt-2 border cursor-pointer border-eh-4 rounded-md shadow-sm focus:outline-none focus:border-eh-3 focus:ring-eh-3 relative overflow-hidden"
-            id="fileDropArea"
+            className="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 p-8 text-center cursor-pointer hover:bg-emerald-100 transition-colors"
             onDrop={handleFileDrop}
             onDragOver={handleDragOver}
           >
-            <p className="text-center bg-gradient-to-r from-eh-3 to-eh-4 py-8 px-4 text-white">
-              Drag and drop your FIF file here, or click to browse
+            <FileUploadIcon className="mx-auto mb-3 text-emerald-600" style={{ fontSize: "2rem" }} />
+            <p className="text-slate-700 font-medium mb-1">
+              Drag & drop your .fif file here, or click to browse
+            </p>
+            <p className="text-xs text-slate-500 mb-4">
+              Only .fif files are supported
             </p>
             <input
               id="fileInput"
-              name="fileInput"
               type="file"
               accept=".fif"
               onChange={handleFileChange}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full"
+              className="hidden"
             />
+            <button
+              onClick={() => document.getElementById("fileInput").click()}
+              className="text-emerald-600 hover:text-emerald-700 font-semibold text-sm underline"
+            >
+              Browse files
+            </button>
           </div>
+
+          {/* File Preview */}
           {selectedFile && (
-            <div className="mt-4 border flex items-center justify-center border-gray-300 rounded-md p-4 bg-gray-100">
-              <p className="text-sm text-gray-700 mr-2">Selected File:</p>
-              <div className="flex items-center">
-                <FilePresentIcon className="w-5 h-5 mr-1 text-eh-4" />
-                <p className="text-sm text-gray-900">{selectedFile.name}</p>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileUploadIcon className="text-emerald-600" />
+                <div>
+                  <p className="text-sm font-medium text-slate-900">
+                    {selectedFile.name}
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={() => setSelectedFile(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
             </div>
           )}
 
+          {/* Submit Button */}
           <button
-            className="bg-eh-4 mt-4 hover:bg-eh-3 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 disabled:cursor-not-allowed"
-            type="button"
             onClick={handleFileSubmit}
             disabled={!selectedFile}
+            className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 transition-all duration-200"
           >
-            Upload File
+            Start Analysis
           </button>
         </div>
       </Dialog>
-    </>
+    </div>
   );
 };
 

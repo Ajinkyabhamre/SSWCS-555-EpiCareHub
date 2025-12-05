@@ -42,7 +42,10 @@ const exportedMethods = {
 
     const newInsertInformation = await patientsCollection.insertOne(newPaitent);
 
-    if (!newInsertInformation.insertedId) throw new Error("Insert failed!");
+    if (!newInsertInformation.insertedId) {
+      throw new Error("Insert failed!");
+    }
+
     return await this.getPaitentById(
       newInsertInformation.insertedId.toString()
     );

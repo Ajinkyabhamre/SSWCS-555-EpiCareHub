@@ -52,6 +52,22 @@ const UserInput = () => {
     return '';
   };
 
+  const validateUsername = (value) => {
+    if (!value.trim()) {
+      return 'Username is required';
+    }
+    if (value.trim().length < 3) {
+      return 'Username must be at least 3 characters';
+    }
+    if (value.trim().length > 20) {
+      return 'Username must be less than 20 characters';
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      return 'Username can only contain letters, numbers, and underscores';
+    }
+    return '';
+  };
+
   const validateEmail = (value) => {
     if (!value.trim()) {
       return 'Email is required';
@@ -107,6 +123,7 @@ const UserInput = () => {
 
     const firstNameError = validateFirstName(formData.firstName);
     const lastNameError = validateLastName(formData.lastName);
+    const usernameError = validateUsername(formData.username);
     const emailError = validateEmail(formData.email);
     const passwordError = validatePassword(formData.password);
     const confirmPasswordError = validateConfirmPassword(formData.confirmPassword);
@@ -114,6 +131,7 @@ const UserInput = () => {
 
     if (firstNameError) errors.firstName = firstNameError;
     if (lastNameError) errors.lastName = lastNameError;
+    if (usernameError) errors.username = usernameError;
     if (emailError) errors.email = emailError;
     if (passwordError) errors.password = passwordError;
     if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
@@ -131,6 +149,9 @@ const UserInput = () => {
         break;
       case 'lastName':
         error = validateLastName(formData.lastName);
+        break;
+      case 'username':
+        error = validateUsername(formData.username);
         break;
       case 'email':
         error = validateEmail(formData.email);
@@ -180,7 +201,7 @@ const UserInput = () => {
       };
 
       const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await axios.post(`${apiUrl}/users`, submitData);
+      const response = await axios.post(`${apiUrl}/register`, submitData);
 
       setSuccessMessage('Registration successful! Redirecting to sign in...');
 
@@ -202,9 +223,12 @@ const UserInput = () => {
       }, 2000);
     } catch (error) {
       console.error('Registration error:', error);
-      setRegistrationError(
-        error.response?.data?.message || 'Registration failed. Please try again.'
-      );
+      // Display backend error message if available
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Registration failed. Please try again.';
+      setRegistrationError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -328,6 +352,39 @@ const UserInput = () => {
                           {fieldErrors.lastName}
                         </motion.p>
                       )}
+                    </div>
+
+                    {/* Username */}
+                    <div>
+                      <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1.5">
+                        Username
+                      </label>
+                      <input
+                        id="username"
+                        type="text"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        onBlur={() => handleFieldBlur('username')}
+                        placeholder="johndoe"
+                        className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
+                          fieldErrors.username
+                            ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                            : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                        }`}
+                      />
+                      {fieldErrors.username && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-1.5 text-sm text-red-600"
+                        >
+                          {fieldErrors.username}
+                        </motion.p>
+                      )}
+                      <p className="mt-2 text-xs text-slate-500">
+                        3-20 characters, letters, numbers, and underscores only
+                      </p>
                     </div>
 
                     {/* Email */}

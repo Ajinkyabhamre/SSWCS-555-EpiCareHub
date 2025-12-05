@@ -41,9 +41,17 @@ const Patients = () => {
       setVisual(true);
 
       const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
+      const devMode = import.meta.env.VITE_EPICARE_DEV_MODE === "true";
+
+      // Use dev endpoint if dev mode is enabled
+      const endpoint = devMode ? "/visualize_brain_dev" : "/visualize_brain";
+
+      if (devMode) {
+        console.log("[DEV MODE] Using dev endpoint:", endpoint);
+      }
 
       axios
-        .post(`${pythonApiUrl}/visualize_brain`, formData)
+        .post(`${pythonApiUrl}${endpoint}`, formData)
         .then((response) => {
           dispatch(selectUpload(response.data.data.uploadId));
           navigate(`/patient/${selectedPatient._id}`);

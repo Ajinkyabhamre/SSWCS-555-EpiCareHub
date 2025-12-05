@@ -12,12 +12,17 @@ import bcrypt from "bcrypt";
 const saltRounds = 14;
 
 const exportedMethods = {
-  async addUser(firstName, lastName, username, email, password) {
+  async addUser(firstName, lastName, username, email, password, userType = "user") {
     firstName = checkIsProperString(firstName, "firstName");
     lastName = checkIsProperString(lastName, "lastName");
     username = checkIsProperUsername(username);
     email = validateEmail(email);
     password = checkPassword(password);
+
+    // Validate userType
+    if (userType && !["user", "admin"].includes(userType)) {
+      throw new Error("Invalid user type. Must be 'user' or 'admin'");
+    }
 
     let hashedPassword = await bcrypt.hash(password, saltRounds);
     let newUser = {
@@ -26,14 +31,16 @@ const exportedMethods = {
       username: username,
       email: email,
       password: hashedPassword,
+      userType: userType || "user", // Default to "user" if not specified
     };
 
     const usersCollection = await users();
-
     const newInsertInformation = await usersCollection.insertOne(newUser);
 
-    if (!newInsertInformation.insertedId)
+    if (!newInsertInformation.insertedId) {
       throw new Error("Error: Insert failed!");
+    }
+
     return { signUpCompleted: true };
   },
 

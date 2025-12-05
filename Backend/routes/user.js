@@ -21,14 +21,29 @@ router
       req.body.username = checkIsProperUsername(req.body.username);
       req.body.email = validateEmail(req.body.email);
       req.body.password = checkPassword(req.body.password);
-      //req.body.contact = checkIsProperString(req.body.password, "password");
     } catch (error) {
-      const result = {
-        userAdded: null,
-        message: error.message,
-        success: false,
-      };
       return res.status(400).json({ isSuccess: false, message: error.message });
+    }
+
+    // Extract userType and adminSecret from request body
+    const { userType, secretKey: adminSecret } = req.body;
+    const adminSecretEnv = process.env.ADMIN_REGISTRATION_SECRET;
+
+    // Admin secret validation for administrator registration
+    if (userType === "admin") {
+      if (!adminSecret) {
+        return res.status(400).json({
+          isSuccess: false,
+          message: "Admin secret key is required for administrator registration.",
+        });
+      }
+
+      if (adminSecret !== adminSecretEnv) {
+        return res.status(400).json({
+          isSuccess: false,
+          message: "Invalid admin secret key.",
+        });
+      }
     }
 
     try {
@@ -37,7 +52,8 @@ router
         req.body.lastName,
         req.body.username,
         req.body.email,
-        req.body.password
+        req.body.password,
+        userType || "user"
       );
 
       if (!addUser.signUpCompleted) throw new Error("Internal Server Error");
@@ -51,7 +67,7 @@ router
         message: error.message,
         success: false,
       };
-      return res.status(404).json(result);
+      return res.status(400).json(result);
     }
   });
 

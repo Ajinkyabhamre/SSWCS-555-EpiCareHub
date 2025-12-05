@@ -13,7 +13,10 @@ const constructorMethod = (app) => {
   app.use("/patients", paitentRoutes);
   app.use("/", userRoutes);
   app.use("/usersDetails", usersDetailRoutes);
-  app.use("/studies", studiesRoutes);
+  // Mount studies routes at root to support both:
+  // - /patients/:patientId/studies (patient-specific study routes)
+  // - /studies/:studyId (study-specific routes)
+  app.use("/", studiesRoutes);
 
   // DEV-ONLY: Register dev routes if EPICARE_DEV_MODE is enabled
   if (process.env.EPICARE_DEV_MODE === "true") {

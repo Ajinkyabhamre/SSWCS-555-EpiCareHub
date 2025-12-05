@@ -33,13 +33,38 @@ const Patients = () => {
     setSelectedFile(file);
   };
 
-  const handleFileSubmit = () => {
-    if (selectedFile) {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("patientId", selectedPatient._id);
-      setVisual(true);
+  const handleFileSubmit = async () => {
+    if (!selectedFile) {
+      setMessage("No file selected.");
+      setOpen(true);
+      return;
+    }
 
+    setVisual(true);
+
+    try {
+      // ====================================================
+      // PHASE 3 STEP 1: Create study in Node backend first
+      // ====================================================
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
+      console.log("[PHASE 3] Creating study record...");
+      const studyResponse = await axios.post(
+        `${apiUrl}/patients/${selectedPatient._id}/studies`,
+        {
+          title: "Baseline EEG", // Optional: could be customizable later
+          status: "PROCESSING",  // Backend will default to this
+        }
+      );
+
+      const createdStudy = studyResponse.data.study;
+      const uploadId = createdStudy.uploadId;
+
+      console.log(`[PHASE 3] Study created with uploadId: ${uploadId}`);
+
+      // ====================================================
+      // PHASE 3 STEP 2: Call Python with uploadId
+      // ====================================================
       const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
       const devMode = import.meta.env.VITE_EPICARE_DEV_MODE === "true";
 
@@ -50,24 +75,40 @@ const Patients = () => {
         console.log("[DEV MODE] Using dev endpoint:", endpoint);
       }
 
-      axios
-        .post(`${pythonApiUrl}${endpoint}`, formData)
-        .then((response) => {
-          dispatch(selectUpload(response.data.data.uploadId));
-          navigate(`/patient/${selectedPatient._id}`);
-          setSelectedFile(null);
-        })
-        .catch((error) => {
-          console.error("Error uploading file:", error);
-          setMessage("Error uploading file.");
-          setOpen(true);
-        })
-        .finally(() => {
-          setVisual(false);
-        });
-    } else {
-      setMessage("No file selected.");
+      // Build FormData with uploadId
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("patientId", selectedPatient._id);
+      formData.append("uploadId", uploadId); // PHASE 3: Include uploadId
+
+      console.log(`[PHASE 3] Calling Python ${endpoint} with uploadId: ${uploadId}`);
+
+      const pythonResponse = await axios.post(`${pythonApiUrl}${endpoint}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      console.log("[PHASE 3] Python processing initiated successfully");
+
+      // ====================================================
+      // PHASE 3 STEP 3: Navigate to patient details
+      // ====================================================
+      dispatch(selectUpload(uploadId));
+      navigate(`/patient/${selectedPatient._id}`);
+      setSelectedFile(null);
+    } catch (error) {
+      console.error("[PHASE 3] Error in upload flow:", error);
+
+      let errorMessage = "Error uploading file.";
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setMessage(errorMessage);
       setOpen(true);
+    } finally {
+      setVisual(false);
     }
   };
 

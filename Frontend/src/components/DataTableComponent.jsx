@@ -90,13 +90,13 @@ const DataTableComponent = ({
 
   const epilepsyBodyTemplate = (rowData) => {
     const badgeClass = rowData.isEpilepsy
-      ? "bg-eh-15 text-white"
-      : "bg-eh-10 text-white";
+      ? "bg-rose-100 text-rose-700 font-semibold"
+      : "bg-emerald-100 text-emerald-700 font-semibold";
 
     const badgeText = rowData.isEpilepsy ? "Epilepsy" : "No Epilepsy";
 
     return (
-      <span className={`inline-block px-2 py-1 rounded-full ${badgeClass}`}>
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${badgeClass}`}>
         {badgeText}
       </span>
     );

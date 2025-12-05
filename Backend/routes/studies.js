@@ -2,6 +2,7 @@ import { Router } from "express";
 const router = Router();
 import { eegStudiesData } from "../data/index.js";
 import { validateId } from "../data/helper.js";
+import crypto from "crypto";
 
 /**
  * GET /patients/:patientId/studies
@@ -33,7 +34,7 @@ router.get("/patients/:patientId/studies", async (req, res) => {
  * GET /studies/:studyId
  * Get a single EEG study by its ID
  */
-router.get("/:studyId", async (req, res) => {
+router.get("/studies/:studyId", async (req, res) => {
   try {
     // Validate studyId
     const studyId = validateId(req.params.studyId, "study id");
@@ -64,14 +65,14 @@ router.get("/:studyId", async (req, res) => {
  * POST /patients/:patientId/studies
  * Create a new EEG study for a patient
  *
- * NOTE: In the current synchronous flow, the frontend sends files directly to Python,
- * and Python calls back to /patients/upload. This endpoint is prepared for future
- * async workflows where we might:
- * 1. Create a study with status "UPLOADED"
- * 2. Send file to Python
- * 3. Python updates the study via callback
+ * PHASE 3: This endpoint is used to initiate a study BEFORE uploading to Python.
+ * The workflow is:
+ * 1. Frontend calls this endpoint to create a study with status "PROCESSING"
+ * 2. Frontend sends file + uploadId to Python
+ * 3. Python processes and calls back to /patients/upload with uploadId
+ * 4. Backend updates the study to status "COMPLETED"
  *
- * For now, this is a thin wrapper for manual study creation (if needed).
+ * If uploadId is not provided, one will be generated automatically.
  */
 router.post("/patients/:patientId/studies", async (req, res) => {
   try {
@@ -88,26 +89,30 @@ router.post("/patients/:patientId/studies", async (req, res) => {
       metadata,
     } = req.body;
 
-    // Validate required fields
-    if (!uploadId) {
-      return res.status(400).json({
-        success: false,
-        error: "uploadId is required",
-      });
-    }
+    // Generate uploadId if not provided (PHASE 3 enhancement)
+    const finalUploadId = uploadId || crypto.randomUUID();
+
+    // Default status to PROCESSING for new uploads (PHASE 3)
+    const finalStatus = status || "PROCESSING";
 
     // Build study data
     const studyData = {
       patientId: patientId,
-      uploadId: uploadId,
-      status: status || "UPLOADED", // Default to UPLOADED for new studies
+      uploadId: finalUploadId,
+      status: finalStatus,
       title: title || null,
       uploadDate: uploadDate ? new Date(uploadDate) : new Date(),
+      completionDate: null, // Will be set when status becomes COMPLETED
+      summary: null,
+      hotspots: [],
       figureUrls: figureUrls || {
         topomap: null,
         brainViews: [],
         annotated: [],
       },
+      reportUrl: null,
+      errorMessage: null,
+      processingTime: null,
       metadata: metadata || {
         modelVersion: null,
         mneVersion: null,
@@ -116,6 +121,10 @@ router.post("/patients/:patientId/studies", async (req, res) => {
 
     // Create study
     const newStudy = await eegStudiesData.createStudy(studyData);
+
+    console.log(
+      `[POST /patients/:patientId/studies] Created study with uploadId=${finalUploadId} status=${finalStatus}`
+    );
 
     return res.status(201).json({
       success: true,
@@ -134,7 +143,7 @@ router.post("/patients/:patientId/studies", async (req, res) => {
  * PATCH /studies/:studyId/status
  * Update the status of an EEG study
  */
-router.patch("/:studyId/status", async (req, res) => {
+router.patch("/studies/:studyId/status", async (req, res) => {
   try {
     // Validate studyId
     const studyId = validateId(req.params.studyId, "study id");
@@ -169,7 +178,7 @@ router.patch("/:studyId/status", async (req, res) => {
  * DELETE /studies/:studyId
  * Delete an EEG study
  */
-router.delete("/:studyId", async (req, res) => {
+router.delete("/studies/:studyId", async (req, res) => {
   try {
     // Validate studyId
     const studyId = validateId(req.params.studyId, "study id");

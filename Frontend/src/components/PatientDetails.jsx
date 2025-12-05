@@ -57,10 +57,11 @@ const PatientDetails = () => {
       patient.isEpilepsy = isEpilepsy;
       patient.comments = comments;
 
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
       let submitConfig = {
         method: "put",
         maxBodyLength: Infinity,
-        url: `http://localhost:3000/patients/`,
+        url: `${apiUrl}/patients/`,
         headers: {
           "Content-Type": "application/json",
         },
@@ -112,10 +113,11 @@ const PatientDetails = () => {
       axios
         .post(`${pythonApiUrl}/visualize_brain`, formData)
         .then((response) => {
+          const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
           let config = {
             method: "get",
             maxBodyLength: Infinity,
-            url: `http://localhost:3000/patients/${id}`,
+            url: `${apiUrl}/patients/${id}`,
             headers: {},
           };
           axios
@@ -180,10 +182,11 @@ const PatientDetails = () => {
   );
 
   useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     let config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: `http://localhost:3000/patients/${id}`,
+      url: `${apiUrl}/patients/${id}`,
       headers: {},
     };
     axios

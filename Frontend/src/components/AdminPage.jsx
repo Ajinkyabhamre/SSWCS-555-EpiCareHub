@@ -16,7 +16,8 @@ const AdminPage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/usersDetails');
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        const response = await axios.get(`${apiUrl}/usersDetails`);
         setUsers(response.data);
       } catch (error) {
         console.error('There was an error fetching the users:', error);
@@ -52,7 +53,8 @@ const AdminPage = () => {
 
   const handleUserDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:3000/usersDetails/${id}`);
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      await axios.delete(`${apiUrl}/usersDetails/${id}`);
       setUsers(users.filter(user => user._id !== id));
     } catch (error) {
       console.error('There was an error deleting the user:', error);
@@ -62,7 +64,8 @@ const AdminPage = () => {
   const handleUserUpdate = async () => {
     try {
       const { _id, ...updatePayload } = selectedUser;
-      const response = await axios.put(`http://localhost:3000/usersDetails/${_id}`, updatePayload);
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      const response = await axios.put(`${apiUrl}/usersDetails/${_id}`, updatePayload);
       
       if (response.data.success) {
         // Optionally refresh the user list here

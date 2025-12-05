@@ -179,7 +179,8 @@ const UserInput = () => {
         secretKey: formData.secretKey,
       };
 
-      const response = await axios.post('http://localhost:3000/users', submitData);
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      const response = await axios.post(`${apiUrl}/users`, submitData);
 
       setSuccessMessage('Registration successful! Redirecting to sign in...');
 

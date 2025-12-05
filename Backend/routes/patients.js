@@ -18,6 +18,7 @@ import moment from "moment";
 
 import axios from "axios";
 import internal, { Readable } from "stream";
+import { validateInternalApiKey } from "../middleware/internalApiKey.js";
 
 router
   .route("/")
@@ -176,7 +177,8 @@ router
     }
   });
 
-router.route("/upload").post(async (req, res) => {
+// Python → Node callback endpoint (protected by API key middleware)
+router.route("/upload").post(validateInternalApiKey, async (req, res) => {
   // let patientId = req.body.patientId;
   let { patientId, ...newEEGObject } = req.body; // Get the patient ID from the request body
 

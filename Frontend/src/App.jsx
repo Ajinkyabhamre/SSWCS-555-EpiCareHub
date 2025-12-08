@@ -80,6 +80,14 @@ const App = () => {
             }
           />
           <Route
+            path="/patient/:patientId/brain/:uploadId"
+            element={
+              <RequireAuth>
+                <Brain />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/brain"
             element={
               <RequireAuth>

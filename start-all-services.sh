@@ -185,7 +185,7 @@ sleep 2
 
 # Start Python ML Service
 echo -e "${GREEN}🚀 Starting Python ML Service (Port 8000)...${NC}"
-open_terminal_tab "🐍 EpiCareHub - Python ML" "cd Localization-Algorithm && conda activate brain && uvicorn brain_api:app --reload --host 0.0.0.0 --port 8000"
+open_terminal_tab "🐍 EpiCareHub - Python ML" "cd Localization-Algorithm && conda activate brain && export KMP_DUPLICATE_LIB_OK=TRUE && uvicorn brain_api:app --reload --host 0.0.0.0 --port 8000"
 sleep 2
 
 # Start Frontend

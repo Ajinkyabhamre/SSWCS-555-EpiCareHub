@@ -13,6 +13,8 @@ import DownloadIcon from "@mui/icons-material/Download";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
 import noImage from "/image.png";
 import PDFGenerator from "./PDFGenerator";
+import EEGProcessingOverlay from "./EEGProcessingOverlay";
+import React from "react";
 
 const views = [
   "medial",
@@ -39,6 +41,22 @@ const PatientDetails = () => {
   const [message, setMessage] = useState("");
   const [studies, setStudies] = useState([]); // PHASE 3: Track EEG studies
   const [activeTab, setActiveTab] = useState("gallery"); // PHASE 4: Tab state
+
+  // PHASE 6: Processing overlay state
+  const [processingOverlay, setProcessingOverlay] = useState({
+    open: false,
+    currentStepId: null,
+    status: "PROCESSING",
+    uploadId: null,
+    patientId: null,
+    patientName: null,
+    studyTitle: null,
+    devMode: false,
+  });
+
+  // PHASE 6: Refs for cleanup
+  const pollingIntervalRef = React.useRef(null);
+  const stepIntervalRef = React.useRef(null);
 
   const handleFileDrop = (event) => {
     event.preventDefault();
@@ -113,17 +131,34 @@ const PatientDetails = () => {
       return;
     }
 
-    setVisual(true);
+    const devMode = import.meta.env.VITE_EPICARE_DEV_MODE === "true";
+    const patientId = patient._id;
+    const patientFullName = `${patient.firstName} ${patient.lastName}`;
+
+    // PHASE 6: Show overlay with first step
+    setProcessingOverlay({
+      open: true,
+      currentStepId: "upload",
+      status: "PROCESSING",
+      uploadId: null,
+      patientId: patientId,
+      patientName: patientFullName,
+      studyTitle: "Baseline EEG",
+      devMode: devMode,
+    });
+
+    // Close the upload dialog
+    setVisible(false);
 
     try {
       // ====================================================
-      // PHASE 3 STEP 1: Create study in Node backend first
+      // STEP 1: Create study in Node backend first
       // ====================================================
       const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-      console.log("[PHASE 3] Creating study record...");
+      console.log("[PHASE 6] Creating study record...");
       const studyResponse = await axios.post(
-        `${apiUrl}/patients/${patient._id}/studies`,
+        `${apiUrl}/patients/${patientId}/studies`,
         {
           title: "Baseline EEG",
           status: "PROCESSING",
@@ -133,64 +168,139 @@ const PatientDetails = () => {
       const createdStudy = studyResponse.data.study;
       const uploadId = createdStudy.uploadId;
 
-      console.log(`[PHASE 3] Study created with uploadId: ${uploadId}`);
+      console.log(`[PHASE 6] Study created with uploadId: ${uploadId}`);
+
+      // Update overlay: upload done, move to preprocess
+      setProcessingOverlay((prev) => ({
+        ...prev,
+        currentStepId: "preprocess",
+        uploadId: uploadId,
+      }));
 
       // ====================================================
-      // PHASE 3 STEP 2: Call Python with uploadId
+      // STEP 2: Call Python with uploadId
       // ====================================================
       const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
-      const devMode = import.meta.env.VITE_EPICARE_DEV_MODE === "true";
-
       const endpoint = devMode ? "/visualize_brain_dev" : "/visualize_brain";
 
       if (devMode) {
-        console.log("[DEV MODE] Using dev endpoint:", endpoint);
+        console.log("[PHASE 6] [DEV MODE] Using dev endpoint:", endpoint);
       }
 
+      // Build FormData with uploadId
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("patientId", patient._id);
-      formData.append("uploadId", uploadId); // PHASE 3: Include uploadId
+      formData.append("patientId", patientId);
+      formData.append("uploadId", uploadId);
 
-      console.log(`[PHASE 3] Calling Python ${endpoint} with uploadId: ${uploadId}`);
+      console.log(`[PHASE 6] Calling Python ${endpoint} with uploadId: ${uploadId}`);
 
+      // PHASE 6: Progress through ML pipeline steps while Python is working
+      const stepSequence = ["localize", "visualize", "save", "summarize"];
+      let stepIndex = 0;
+
+      stepIntervalRef.current = setInterval(() => {
+        if (stepIndex < stepSequence.length) {
+          setProcessingOverlay((prev) => ({
+            ...prev,
+            currentStepId: stepSequence[stepIndex],
+          }));
+          stepIndex++;
+        }
+      }, devMode ? 500 : 3000); // Faster in dev mode
+
+      // Call Python endpoint (async, Python will callback to Node)
       await axios.post(`${pythonApiUrl}${endpoint}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log("[PHASE 3] Python processing initiated successfully");
+      clearInterval(stepIntervalRef.current);
+
+      console.log("[PHASE 6] Python processing initiated successfully");
 
       // ====================================================
-      // PHASE 3 STEP 3: Refresh patient data
+      // STEP 3: Poll for study completion
       // ====================================================
-      const patientResponse = await axios.get(`${apiUrl}/patients/${id}`);
-      setPatient(patientResponse.data);
-      const tempPatient = patientResponse.data;
-      setIsEpilepsy(tempPatient.isEpilepsy);
-      setComments(tempPatient.comments);
+      pollingIntervalRef.current = setInterval(async () => {
+        try {
+          const studiesResponse = await axios.get(`${apiUrl}/patients/${patientId}/studies`);
 
-      if (
-        !selectedUpload &&
-        tempPatient.eegVisuals &&
-        tempPatient.eegVisuals.length > 0
-      ) {
-        dispatch(
-          selectUpload(
-            tempPatient.eegVisuals[tempPatient.eegVisuals.length - 1]
-          )
-        );
-      }
+          if (studiesResponse.data.success && studiesResponse.data.studies) {
+            const matchingStudy = studiesResponse.data.studies.find(
+              (s) => s.uploadId === uploadId
+            );
 
-      // Refresh studies list
-      const studiesResponse = await axios.get(`${apiUrl}/patients/${id}/studies`);
-      if (studiesResponse.data.success && studiesResponse.data.studies) {
-        setStudies(studiesResponse.data.studies);
-      }
+            if (matchingStudy) {
+              if (matchingStudy.status === "COMPLETED") {
+                clearInterval(pollingIntervalRef.current);
 
-      setSelectedFile(null);
-      setVisible(false);
+                // Show completion
+                setProcessingOverlay((prev) => ({
+                  ...prev,
+                  status: "COMPLETED",
+                }));
+
+                // Wait 2 seconds to show success message, then refresh data
+                setTimeout(async () => {
+                  setProcessingOverlay({
+                    open: false,
+                    currentStepId: null,
+                    status: "PROCESSING",
+                    uploadId: null,
+                    patientId: null,
+                    patientName: null,
+                    studyTitle: null,
+                    devMode: false,
+                  });
+
+                  // Refresh patient data
+                  const patientResponse = await axios.get(`${apiUrl}/patients/${id}`);
+                  setPatient(patientResponse.data);
+                  const tempPatient = patientResponse.data;
+                  setIsEpilepsy(tempPatient.isEpilepsy);
+                  setComments(tempPatient.comments);
+
+                  if (
+                    !selectedUpload &&
+                    tempPatient.eegVisuals &&
+                    tempPatient.eegVisuals.length > 0
+                  ) {
+                    dispatch(
+                      selectUpload(
+                        tempPatient.eegVisuals[tempPatient.eegVisuals.length - 1]
+                      )
+                    );
+                  }
+
+                  // Refresh studies list
+                  const studiesResponse2 = await axios.get(`${apiUrl}/patients/${id}/studies`);
+                  if (studiesResponse2.data.success && studiesResponse2.data.studies) {
+                    setStudies(studiesResponse2.data.studies);
+                  }
+
+                  setSelectedFile(null);
+                }, 2000);
+              } else if (matchingStudy.status === "FAILED") {
+                clearInterval(pollingIntervalRef.current);
+
+                // Show error
+                setProcessingOverlay((prev) => ({
+                  ...prev,
+                  status: "FAILED",
+                }));
+              }
+            }
+          }
+        } catch (pollError) {
+          console.error("[PHASE 6] Polling error:", pollError);
+        }
+      }, devMode ? 2000 : 5000); // Poll every 2s in dev, 5s in production
     } catch (error) {
-      console.error("[PHASE 3] Error in upload flow:", error);
+      console.error("[PHASE 6] Error in upload flow:", error);
+
+      // Clear intervals
+      if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
 
       let errorMessage = "Error uploading file.";
       if (error.response?.data?.error) {
@@ -199,10 +309,13 @@ const PatientDetails = () => {
         errorMessage = error.message;
       }
 
+      setProcessingOverlay((prev) => ({
+        ...prev,
+        status: "FAILED",
+      }));
+
       setMessage(errorMessage);
       setVisible(true);
-    } finally {
-      setVisual(false);
     }
   };
 
@@ -286,6 +399,18 @@ const PatientDetails = () => {
       });
   }, [dispatch, id, selectedUpload]);
 
+  // PHASE 6: Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      if (stepIntervalRef.current) {
+        clearInterval(stepIntervalRef.current);
+      }
+    };
+  }, []);
+
   // PHASE 4: Helper to determine current study
   const getCurrentStudy = () => {
     // Prefer latest COMPLETED or PROCESSING study
@@ -345,27 +470,6 @@ const PatientDetails = () => {
       </span>
     );
   };
-
-  if (visual) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-4">
-        <div className="rounded-3xl border border-emerald-50 bg-white p-8 max-w-md w-full shadow-[0_18px_60px_rgba(15,118,110,0.10)] text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-3">
-            Visualizing EEG Data
-          </h2>
-          <p className="text-slate-600 mb-6">
-            Please wait while we analyze and visualize the brain activity...
-          </p>
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
-          </div>
-          <p className="text-sm text-slate-500">
-            Do not close or refresh the browser
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (!patient) {
     return (
@@ -711,6 +815,13 @@ const PatientDetails = () => {
                           {study.title || `Study #${index + 1}`}
                         </p>
                         {getStatusBadge(study.status)}
+                        {/* 3D badge for studies with MNE brain view images */}
+                        {study.brainViews && Object.keys(study.brainViews).length > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <span>📍</span>
+                            3D Images Ready ({Object.keys(study.brainViews).length})
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-slate-500">
                         Uploaded {formatDate(upload?.uploadDate || study.createdAt)}
@@ -865,6 +976,32 @@ const PatientDetails = () => {
           </button>
         </div>
       </Dialog>
+
+      {/* PHASE 6: Processing Overlay */}
+      <EEGProcessingOverlay
+        open={processingOverlay.open}
+        currentStepId={processingOverlay.currentStepId}
+        status={processingOverlay.status}
+        patientName={processingOverlay.patientName}
+        studyTitle={processingOverlay.studyTitle}
+        devMode={processingOverlay.devMode}
+        onCancel={() => {
+          // Clear intervals
+          if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+          if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+          // Close overlay
+          setProcessingOverlay({
+            open: false,
+            currentStepId: null,
+            status: "PROCESSING",
+            uploadId: null,
+            patientId: null,
+            patientName: null,
+            studyTitle: null,
+            devMode: false,
+          });
+        }}
+      />
     </>
   );
 };

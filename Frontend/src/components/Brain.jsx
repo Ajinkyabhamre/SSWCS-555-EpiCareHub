@@ -1,123 +1,9 @@
 /* eslint-disable react/no-unknown-property */
 import React, { Suspense, useState, useEffect } from "react";
-import { Canvas, useLoader } from "@react-three/fiber";
-import { OrbitControls, Preload, useGLTF, Plane } from "@react-three/drei";
-import * as THREE from "three";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import Loader from "./Loader";
-
-const BrainModel = ({ onClick }) => {
-  const texture = useLoader(THREE.TextureLoader, "/obj/blender/Brain.png");
-  const brain = useGLTF("/obj/blender/Brain2.gltf");
-  const [hovered, setHovered] = useState(false);
-  const handleClick = (event) => {
-    const { offsetX, offsetY } = event.nativeEvent;
-    if (event.intersections.length > 0) {
-      const intersect = event.intersections[0];
-      const { point } = intersect;
-      const popup = document.createElement("div");
-      popup.textContent = event.object.name + " clicked!";
-      popup.style.position = "absolute";
-      popup.style.top = `${event.y}px`;
-      popup.style.left = `${event.x}px`;
-      popup.style.background = "white";
-      popup.style.padding = "10px";
-      popup.style.border = "1px solid black";
-      popup.style.zIndex = "1000";
-      document.body.appendChild(popup);
-
-      setTimeout(() => {
-        document.body.removeChild(popup);
-      }, 2000);
-      onClick(point);
-    }
-  };
-  const createCustomMaterial = (texture) => {
-    return new THREE.ShaderMaterial({
-      uniforms: {},
-      vertexShader: `
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `,
-      fragmentShader: `
-            varying vec2 vUv;
-
-            void main() {
-                // Simulate heatmap texture
-
-                // Determine the vertical position (normalized)
-                float t = clamp(vUv.y, 0.0, 1.0); // Clamp vUv.y to the range [0, 1]
-
-                vec3 color;
-                if (t < 0.2) {
-                  // color = oxf2aeb1;
-                } else if (t < 0.4) {
-                  // Yellow to Orange
-                  color = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.5, 0.0), (t - 0.2) * 5.0);
-                } else if (t < 0.6) {
-                  // Orange to Red
-                  color = mix(vec3(1.0, 0.5, 0.0), vec3(1.0, 0.0, 0.0), (t - 0.4) * 5.0);
-                } else if (t < 0.8) {
-                  // Red to Dark Red
-                  color = mix(vec3(1.0, 0.0, 0.0), vec3(0.5, 0.0, 0.0), (t - 0.6) * 5.0);
-                } else if (t < 0.9) {
-                  // Green to Yellow
-                  color = mix(vec3(0.0, 0.5, 0.0), vec3(1.0, 1.0, 0.0), t * 5.0);
-                } else {
-                  // Dark Red
-                  color = vec3(0.5, 0.0, 0.0);
-                }
-
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `,
-    });
-  };
-
-  const blueMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-  const redMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-
-  brain.scene.traverse((child) => {
-    if (child.isMesh) {
-      switch (child.name) {
-        case "Brain_Part_02":
-          child.material.color = new THREE.Color(0x3f0a0c);
-          break;
-        case "Brain_Part_04":
-          child.material.color = new THREE.Color(0xffffff);
-          break;
-        case "Brain_Part_05":
-          child.material.color = new THREE.Color(0xffffb1);
-          break;
-        case "Brain_Part_06":
-          child.material.color = new THREE.Color(0xf2aeb1);
-          child.material = createCustomMaterial(texture);
-          break;
-      }
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
-
-  return (
-    <mesh onClick={handleClick}>
-      <directionalLight intensity={1} position={[0, 1, 0]} castShadow />
-      <directionalLight intensity={1} position={[0, -1, 0]} castShadow />
-      <directionalLight intensity={1} position={[1, 0, 0]} />
-      <directionalLight intensity={1} position={[-1, 0, 0]} />
-      <directionalLight intensity={1} position={[0, 0, 1]} />
-      <directionalLight intensity={1} position={[0, 0, -1]} />
-
-      <primitive object={brain.scene} scale={15} position={[1, -3, 0]} />
-    </mesh>
-  );
-};
 
 const Brain = () => {
   const { patientId, uploadId } = useParams();
@@ -127,12 +13,9 @@ const Brain = () => {
   const [study, setStudy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedView, setSelectedView] = useState(null);
 
-  const handleClick = (event) => {
-    // Handle click event on brain model
-  };
-
-  // PHASE 4: Fetch patient and study data
+  // Fetch patient and study data
   useEffect(() => {
     const fetchData = async () => {
       if (!patientId || !uploadId) {
@@ -157,6 +40,11 @@ const Brain = () => {
           );
           if (matchingStudy) {
             setStudy(matchingStudy);
+            // Auto-select first available view (prefer left_lateral if available)
+            if (matchingStudy.brainViews && Object.keys(matchingStudy.brainViews).length > 0) {
+              const views = Object.keys(matchingStudy.brainViews);
+              setSelectedView(views.includes('left_lateral') ? 'left_lateral' : views[0]);
+            }
           } else {
             setError("No study found for this upload ID");
           }
@@ -186,7 +74,7 @@ const Brain = () => {
     }
   };
 
-  // PHASE 4: Fallback hotspots if study doesn't have them
+  // Fallback hotspots if study doesn't have them
   const hotspots = study?.hotspots?.length
     ? study.hotspots
     : [
@@ -200,7 +88,7 @@ const Brain = () => {
       <div className="min-h-screen bg-emerald-50 flex items-center justify-center">
         <div className="rounded-3xl border border-emerald-50 bg-white p-8 text-center">
           <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Loading 3D brain view...</p>
+          <p className="text-slate-600">Loading brain view...</p>
         </div>
       </div>
     );
@@ -231,6 +119,46 @@ const Brain = () => {
   const shortUploadId = uploadId ? uploadId.slice(-8) : "demo";
   const formattedDate = study?.createdAt ? formatDate(study.createdAt) : "N/A";
 
+  // Get brain views
+  const brainViews = study?.brainViews || {};
+
+  // Sort views in preferred order
+  const preferredOrder = ['left_lateral', 'right_lateral', 'top', 'anterior'];
+  const viewEntries = Object.entries(brainViews).sort(([keyA], [keyB]) => {
+    const indexA = preferredOrder.indexOf(keyA);
+    const indexB = preferredOrder.indexOf(keyB);
+
+    // If both are in preferred order, sort by that order
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    // If only A is in preferred order, it comes first
+    if (indexA !== -1) return -1;
+    // If only B is in preferred order, it comes first
+    if (indexB !== -1) return 1;
+    // Otherwise, sort alphabetically
+    return keyA.localeCompare(keyB);
+  });
+
+  const hasBrainViews = viewEntries.length > 0;
+
+  // Format view names
+  const formatViewName = (viewName) => {
+    // Handle standard view names
+    if (viewName === 'left_lateral') return 'Left Lateral View';
+    if (viewName === 'right_lateral') return 'Right Lateral View';
+    if (viewName === 'top') return 'Superior (Top) View';
+    if (viewName === 'anterior') return 'Anterior View';
+
+    // Legacy support for old naming
+    if (viewName === 'left') return 'Left Lateral View';
+    if (viewName === 'right') return 'Right Lateral View';
+
+    // Generic fallback: replace underscores with spaces and capitalize
+    return viewName
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ') + ' View';
+  };
+
   return (
     <div className="min-h-screen bg-emerald-50 px-8 py-6 flex flex-col gap-4">
       {/* Header */}
@@ -242,7 +170,7 @@ const Brain = () => {
       >
         <div>
           <p className="text-xs font-semibold text-emerald-700 mb-1 uppercase tracking-wider">
-            {isDemoMode ? "3D Brain Visualization Demo" : "3D Seizure Localization View"}
+            {isDemoMode ? "Brain Visualization Demo" : "ECoG Seizure Localization"}
           </p>
           <h1 className="text-2xl font-semibold text-slate-900 mb-1">
             {patientName} {!isDemoMode && `• Study ${shortUploadId}`}
@@ -285,38 +213,82 @@ const Brain = () => {
         transition={{ duration: 0.4, delay: 0.1 }}
         className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr),minmax(0,1.1fr)] gap-6 items-start"
       >
-        {/* Left: 3D Canvas */}
+        {/* Left: Brain Visualization */}
         <div className="rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,118,110,0.08)] p-6">
           <div className="mb-4 pb-4 border-b border-emerald-50">
             <h2 className="text-lg font-semibold text-slate-900 mb-1">
-              Interactive 3D Brain Model
+              3D Brain Visualization
             </h2>
             <p className="text-sm text-slate-600">
-              Click and drag to rotate • Scroll to zoom • Explore brain regions
+              {hasBrainViews
+                ? "MNE-generated brain views showing electrode positions and hotspots"
+                : "No 3D brain images available for this study yet"}
             </p>
           </div>
 
-          <div
-            className="brain-canvas rounded-xl overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50"
-            style={{ height: "500px" }}
-          >
-            <Canvas
-              frameloop="demand"
-              shadows
-              camera={{ position: [10, 10, 10], fov: 30 }}
-              gl={{ preserveDrawingBuffer: true }}
-            >
-              <Suspense fallback={<Loader />}>
-                <OrbitControls
-                  enableZoom={true}
-                  maxPolarAngle={Math.PI / 2}
-                  minPolarAngle={Math.PI / 2}
-                />
-                <BrainModel onClick={handleClick} />
-              </Suspense>
-              <Preload all />
-            </Canvas>
-          </div>
+          {hasBrainViews ? (
+            <div className="space-y-4">
+              {/* View selector tabs */}
+              {viewEntries.length > 1 && (
+                <div className="flex gap-2 bg-slate-50 p-1 rounded-lg">
+                  {viewEntries.map(([viewName]) => (
+                    <button
+                      key={viewName}
+                      onClick={() => setSelectedView(viewName)}
+                      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        selectedView === viewName
+                          ? "bg-white text-emerald-700 shadow-sm"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {formatViewName(viewName)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected brain view image */}
+              {selectedView && brainViews[selectedView] && (
+                <div className="rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
+                  <img
+                    src={brainViews[selectedView]}
+                    alt={`${formatViewName(selectedView)}`}
+                    className="w-full h-auto"
+                  />
+                </div>
+              )}
+
+              {/* All views grid (if only 1-2 views, show them all) */}
+              {viewEntries.length <= 2 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {viewEntries.map(([viewName, url]) => (
+                    <div key={viewName} className="rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
+                      <div className="px-3 py-2 bg-white border-b border-slate-200">
+                        <h3 className="text-sm font-semibold text-slate-800">
+                          {formatViewName(viewName)}
+                        </h3>
+                      </div>
+                      <img
+                        src={url}
+                        alt={`${formatViewName(viewName)}`}
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-slate-500">
+              <div className="text-6xl mb-4">🧠</div>
+              <p className="text-lg font-medium mb-2">No 3D Brain Images Available</p>
+              <p className="text-sm">
+                {isDemoMode
+                  ? "This is a demo mode. Upload a ds003029 ECoG recording to see brain visualizations."
+                  : "Brain snapshots were not generated for this study. This may occur if electrode position data is unavailable."}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Right: Info Panel */}
@@ -342,7 +314,7 @@ const Brain = () => {
                 <div key={index} className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-900">
-                      {hotspot.region}
+                      {hotspot.channel || hotspot.region}
                     </span>
                     <span className="text-sm font-semibold text-emerald-600">
                       {(hotspot.confidence * 100).toFixed(0)}%
@@ -354,6 +326,11 @@ const Brain = () => {
                       style={{ width: `${hotspot.confidence * 100}%` }}
                     />
                   </div>
+                  {hotspot.coordinates && hotspot.coordinates.some(c => c !== 0) && (
+                    <div className="text-xs font-mono text-slate-500">
+                      Coords: ({hotspot.coordinates[0].toFixed(1)}, {hotspot.coordinates[1].toFixed(1)}, {hotspot.coordinates[2].toFixed(1)}) mm
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -369,20 +346,28 @@ const Brain = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Model Version</span>
                   <span className="text-sm font-semibold text-slate-900">
-                    {study?.metadata?.modelVersion || "v1.0"}
+                    {study?.metadata?.modelVersion || "ECoG-Activity-1.0"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">MNE Version</span>
                   <span className="text-sm font-semibold text-slate-900">
-                    {study?.metadata?.mneVersion || "1.5.0"}
+                    {study?.metadata?.mneVersion || "1.x.x"}
                   </span>
                 </div>
-                {study?.metadata?.processingTime && (
+                {study?.processingTime && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-600">Processing Time</span>
                     <span className="text-sm font-semibold text-slate-900">
-                      {study.metadata.processingTime}s
+                      {study.processingTime}s
+                    </span>
+                  </div>
+                )}
+                {hasBrainViews && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600">Brain Views</span>
+                    <span className="text-sm font-semibold text-emerald-600">
+                      {viewEntries.length} available
                     </span>
                   </div>
                 )}

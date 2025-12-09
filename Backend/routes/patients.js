@@ -180,7 +180,7 @@ router
 // Python → Node callback endpoint (protected by API key middleware)
 router.route("/upload").post(validateInternalApiKey, async (req, res) => {
   // let patientId = req.body.patientId;
-  let { patientId, uploadId, figUrl, matUrl, images, metadata, ...otherFields } = req.body;
+  let { patientId, uploadId, figUrl, matUrl, images, metadata, summary, hotspots, brainViews, ...otherFields } = req.body;
 
   try {
     patientId = validateId(patientId, "patient Id");
@@ -199,13 +199,16 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
     const getPatient = await patientsData.getPaitentById(patientId);
     if (!getPatient.eegVisuals) getPatient.eegVisuals = [];
 
-    // Build the eegVisuals entry (same as before)
+    // Build the eegVisuals entry (include summary, hotspots, and MNE brain views)
     const newEEGObject = {
       uploadId,
       figUrl,
       matUrl,
       images,
       uploadDate: moment().format("MM/DD/YYYY"),
+      summary: summary || null,
+      hotspots: Array.isArray(hotspots) ? hotspots : [],
+      brainViews: brainViews || {},  // MNE-generated 3D brain snapshots
       ...otherFields, // Include any other fields Python might send
     };
 
@@ -254,6 +257,9 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
             mneVersion: null,
           },
           processingTime: processingTime,
+          summary: summary || null,
+          hotspots: Array.isArray(hotspots) ? hotspots : [],
+          brainViews: brainViews || {},  // MNE-generated 3D brain snapshots
         });
 
         console.log(
@@ -280,6 +286,9 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
             modelVersion: null,
             mneVersion: null,
           },
+          summary: summary || null,
+          hotspots: Array.isArray(hotspots) ? hotspots : [],
+          brainViews: brainViews || {},  // MNE-generated 3D brain snapshots
         });
 
         console.log(`[/patients/upload] ✓ New study created with COMPLETED status`);

@@ -77,6 +77,7 @@ const exportedMethods = {
       completionDate: studyData.completionDate || null,
       summary: studyData.summary || null,
       hotspots: studyData.hotspots || [],
+      brainViews: studyData.brainViews || {},  // MNE-generated 3D brain snapshots (e.g., {left: url, right: url})
       figureUrls: {
         topomap: studyData.figureUrls?.topomap || null,
         brainViews: studyData.figureUrls?.brainViews || [],
@@ -207,6 +208,7 @@ const exportedMethods = {
     if (results.completionDate) updateData.completionDate = results.completionDate;
     if (results.summary) updateData.summary = results.summary;
     if (results.hotspots) updateData.hotspots = results.hotspots;
+    if (results.brainViews !== undefined) updateData.brainViews = results.brainViews;  // MNE-generated 3D brain snapshots
     if (results.figureUrls) updateData.figureUrls = results.figureUrls;
     if (results.reportUrl) updateData.reportUrl = results.reportUrl;
     if (results.errorMessage) updateData.errorMessage = results.errorMessage;

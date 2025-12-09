@@ -42,3 +42,7 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
+
+# Ignore all markdown docs except README
+*.md
+!README.md

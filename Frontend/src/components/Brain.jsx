@@ -1,9 +1,9 @@
-/* eslint-disable react/no-unknown-property */
-import React, { Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import BrainWebGLViewer from "./BrainWebGLViewer";
 
 const Brain = () => {
   const { patientId, uploadId } = useParams();
@@ -14,6 +14,17 @@ const Brain = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedView, setSelectedView] = useState(null);
+  const [activeTab, setActiveTab] = useState("static"); // "static" or "interactive"
+
+  // Feature flag for WebGL brain viewer
+  const ENABLE_WEBGL_BRAIN = import.meta.env.VITE_ENABLE_WEBGL_BRAIN === "true";
+
+  // Determine if WebGL tab should be shown
+  const isHumanMtlStudy = study?.metadata?.modelVersion?.includes("Human-MTL") ||
+                          study?.mode === "HUMAN_MTL" ||
+                          study?.pipelineMode === "HUMAN_MTL";
+  const hasOverlayHint = !!study?.webglOverlayUrl;
+  const showWebglTab = ENABLE_WEBGL_BRAIN && (isHumanMtlStudy || hasOverlayHint);
 
   // Fetch patient and study data
   useEffect(() => {
@@ -85,10 +96,10 @@ const Brain = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-emerald-50 flex items-center justify-center">
-        <div className="rounded-3xl border border-emerald-50 bg-white p-8 text-center">
-          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Loading brain view...</p>
+      <div className="min-h-screen bg-emerald-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="rounded-3xl border border-emerald-50 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center">
+          <div className="w-12 h-12 border-4 border-emerald-200 dark:border-emerald-800 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-300">Loading brain view...</p>
         </div>
       </div>
     );
@@ -97,14 +108,14 @@ const Brain = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-emerald-50 flex items-center justify-center px-4">
-        <div className="rounded-3xl border border-rose-100 bg-white p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-emerald-50 dark:bg-slate-950 flex items-center justify-center px-4">
+        <div className="rounded-3xl border border-rose-100 dark:border-rose-900 bg-white dark:bg-slate-900 p-8 max-w-md w-full text-center">
           <div className="text-5xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-3">Unable to Load Study</h2>
-          <p className="text-slate-600 mb-6">{error}</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">Unable to Load Study</h2>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">{error}</p>
           <button
             onClick={() => navigate(-1)}
-            className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 transition-all duration-200"
+            className="w-full rounded-full bg-emerald-600 dark:bg-emerald-700 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-semibold px-6 py-3 transition-all duration-200"
           >
             Back to Patient
           </button>
@@ -160,7 +171,7 @@ const Brain = () => {
   };
 
   return (
-    <div className="min-h-screen bg-emerald-50 px-8 py-6 flex flex-col gap-4">
+    <div className="min-h-screen bg-emerald-50 dark:bg-slate-950 px-8 py-6 flex flex-col gap-4">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -169,14 +180,14 @@ const Brain = () => {
         className="flex items-center justify-between"
       >
         <div>
-          <p className="text-xs font-semibold text-emerald-700 mb-1 uppercase tracking-wider">
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1 uppercase tracking-wider">
             {isDemoMode ? "Brain Visualization Demo" : "ECoG Seizure Localization"}
           </p>
-          <h1 className="text-2xl font-semibold text-slate-900 mb-1">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-1">
             {patientName} {!isDemoMode && `• Study ${shortUploadId}`}
           </h1>
           {!isDemoMode && (
-            <div className="flex items-center gap-3 text-sm text-slate-500">
+            <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
               <span>Uploaded {formattedDate}</span>
               {study?.status && (
                 <>
@@ -184,10 +195,10 @@ const Brain = () => {
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       study.status === "COMPLETED"
-                        ? "bg-emerald-100 text-emerald-700"
+                        ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                         : study.status === "PROCESSING"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-rose-100 text-rose-700"
+                        ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                        : "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"
                     }`}
                   >
                     {study.status}
@@ -199,7 +210,7 @@ const Brain = () => {
         </div>
         <button
           onClick={() => (patientId ? navigate(`/patient/${patientId}`) : navigate(-1))}
-          className="inline-flex items-center gap-2 rounded-full border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-5 py-2 transition-all duration-200"
+          className="inline-flex items-center gap-2 rounded-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold px-5 py-2 transition-all duration-200"
         >
           <ArrowBackIcon style={{ fontSize: "1.2rem" }} />
           Back to Patient
@@ -214,31 +225,58 @@ const Brain = () => {
         className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr),minmax(0,1.1fr)] gap-6 items-start"
       >
         {/* Left: Brain Visualization */}
-        <div className="rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,118,110,0.08)] p-6">
-          <div className="mb-4 pb-4 border-b border-emerald-50">
-            <h2 className="text-lg font-semibold text-slate-900 mb-1">
+        <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-[0_18px_45px_rgba(15,118,110,0.08)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.5)] border border-transparent dark:border-slate-800 p-6">
+          <div className="mb-4 pb-4 border-b border-emerald-50 dark:border-slate-800">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">
               3D Brain Visualization
             </h2>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               {hasBrainViews
                 ? "MNE-generated brain views showing electrode positions and hotspots"
                 : "No 3D brain images available for this study yet"}
             </p>
           </div>
 
-          {hasBrainViews ? (
+          {/* Tab UI - show for HUMAN_MTL studies or if overlay URL exists */}
+          {showWebglTab && (
+            <div className="mb-4 flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-lg">
+              <button
+                onClick={() => setActiveTab("static")}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === "static"
+                    ? "bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                }`}
+              >
+                Static Views (MNE)
+              </button>
+              <button
+                onClick={() => setActiveTab("interactive")}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === "interactive"
+                    ? "bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                }`}
+              >
+                Interactive 3D (beta)
+              </button>
+            </div>
+          )}
+
+          {/* Static MNE Views Tab */}
+          {activeTab === "static" && hasBrainViews ? (
             <div className="space-y-4">
               {/* View selector tabs */}
               {viewEntries.length > 1 && (
-                <div className="flex gap-2 bg-slate-50 p-1 rounded-lg">
+                <div className="flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-lg">
                   {viewEntries.map(([viewName]) => (
                     <button
                       key={viewName}
                       onClick={() => setSelectedView(viewName)}
                       className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                         selectedView === viewName
-                          ? "bg-white text-emerald-700 shadow-sm"
-                          : "text-slate-600 hover:text-slate-900"
+                          ? "bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                          : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
                       }`}
                     >
                       {formatViewName(viewName)}
@@ -249,7 +287,7 @@ const Brain = () => {
 
               {/* Selected brain view image */}
               {selectedView && brainViews[selectedView] && (
-                <div className="rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
+                <div className="rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                   <img
                     src={brainViews[selectedView]}
                     alt={`${formatViewName(selectedView)}`}
@@ -262,9 +300,9 @@ const Brain = () => {
               {viewEntries.length <= 2 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {viewEntries.map(([viewName, url]) => (
-                    <div key={viewName} className="rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
-                      <div className="px-3 py-2 bg-white border-b border-slate-200">
-                        <h3 className="text-sm font-semibold text-slate-800">
+                    <div key={viewName} className="rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <div className="px-3 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                           {formatViewName(viewName)}
                         </h3>
                       </div>
@@ -278,56 +316,61 @@ const Brain = () => {
                 </div>
               )}
             </div>
-          ) : (
-            <div className="text-center py-12 text-slate-500">
+          ) : activeTab === "static" ? (
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
               <div className="text-6xl mb-4">🧠</div>
-              <p className="text-lg font-medium mb-2">No 3D Brain Images Available</p>
+              <p className="text-lg font-medium mb-2 text-slate-700 dark:text-slate-300">No 3D Brain Images Available</p>
               <p className="text-sm">
                 {isDemoMode
                   ? "This is a demo mode. Upload a ds003029 ECoG recording to see brain visualizations."
                   : "Brain snapshots were not generated for this study. This may occur if electrode position data is unavailable."}
               </p>
             </div>
+          ) : null}
+
+          {/* Interactive WebGL Tab */}
+          {activeTab === "interactive" && (
+            <BrainWebGLViewer uploadId={uploadId} study={study} />
           )}
         </div>
 
         {/* Right: Info Panel */}
         <div className="space-y-4">
           {/* Localization Summary Card */}
-          <div className="rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,118,110,0.08)] p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">
+          <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-[0_18px_45px_rgba(15,118,110,0.08)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.5)] border border-transparent dark:border-slate-800 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
               Localization Summary
             </h3>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
               {study?.summary ||
                 "EEG analysis reveals potential seizure focus regions. The visualization shows areas of abnormal brain activity that may indicate epileptogenic zones. Further clinical correlation is recommended."}
             </p>
           </div>
 
           {/* Hotspots Card */}
-          <div className="rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,118,110,0.08)] p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+          <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-[0_18px_45px_rgba(15,118,110,0.08)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.5)] border border-transparent dark:border-slate-800 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
               Detected Hotspots
             </h3>
             <div className="space-y-3">
               {hotspots.map((hotspot, index) => (
                 <div key={index} className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-900">
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                       {hotspot.channel || hotspot.region}
                     </span>
-                    <span className="text-sm font-semibold text-emerald-600">
+                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       {(hotspot.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                      className="bg-emerald-500 dark:bg-emerald-600 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${hotspot.confidence * 100}%` }}
                     />
                   </div>
                   {hotspot.coordinates && hotspot.coordinates.some(c => c !== 0) && (
-                    <div className="text-xs font-mono text-slate-500">
+                    <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
                       Coords: ({hotspot.coordinates[0].toFixed(1)}, {hotspot.coordinates[1].toFixed(1)}, {hotspot.coordinates[2].toFixed(1)}) mm
                     </div>
                   )}
@@ -338,35 +381,35 @@ const Brain = () => {
 
           {/* Metadata Card */}
           {!isDemoMode && (
-            <div className="rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,118,110,0.08)] p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+            <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-[0_18px_45px_rgba(15,118,110,0.08)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.5)] border border-transparent dark:border-slate-800 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                 Analysis Metadata
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Model Version</span>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Model Version</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {study?.metadata?.modelVersion || "ECoG-Activity-1.0"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">MNE Version</span>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">MNE Version</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {study?.metadata?.mneVersion || "1.x.x"}
                   </span>
                 </div>
                 {study?.processingTime && (
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Processing Time</span>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">Processing Time</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {study.processingTime}s
                     </span>
                   </div>
                 )}
                 {hasBrainViews && (
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Brain Views</span>
-                    <span className="text-sm font-semibold text-emerald-600">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">Brain Views</span>
+                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       {viewEntries.length} available
                     </span>
                   </div>

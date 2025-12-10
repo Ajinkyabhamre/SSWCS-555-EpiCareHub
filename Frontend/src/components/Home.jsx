@@ -23,7 +23,7 @@ const FeatureCard = ({ emoji, title, description, index }) => (
     transition={{ duration: 0.5, delay: index * 0.1 }}
     viewport={{ once: true, margin: "-100px" }}
     whileHover={{ y: -8, boxShadow: "0 20px 25px -5px rgba(16, 185, 129, 0.15)" }}
-    className="group rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm transition-all duration-200"
+    className="group rounded-2xl border border-emerald-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm transition-all duration-200"
   >
     <motion.div
       className="text-4xl mb-4"
@@ -32,8 +32,8 @@ const FeatureCard = ({ emoji, title, description, index }) => (
     >
       {emoji}
     </motion.div>
-    <h3 className="text-base font-semibold text-slate-900 mb-3">{title}</h3>
-    <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+    <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">{title}</h3>
+    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{description}</p>
   </motion.div>
 );
 
@@ -57,8 +57,8 @@ const StepCard = ({ number, title, description, index }) => (
     >
       {number}
     </motion.div>
-    <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-    <p className="mt-2 text-xs text-slate-600 max-w-xs">{description}</p>
+    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+    <p className="mt-2 text-xs text-slate-600 dark:text-slate-300 max-w-xs">{description}</p>
   </motion.div>
 );
 
@@ -100,9 +100,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white text-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* ============= HERO SECTION ============= */}
-      <section className="bg-gradient-to-br from-emerald-50 via-emerald-100 to-emerald-50 py-16 md:py-24">
+      <section className="bg-gradient-to-br from-emerald-50 dark:from-slate-900 via-emerald-100 dark:via-slate-800 to-emerald-50 dark:to-slate-900 py-16 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid gap-12 md:grid-cols-2 items-center">
             {/* Left Column: Text & CTAs */}
@@ -118,7 +118,7 @@ export default function Home() {
                 className="mb-6 inline-flex w-fit"
               >
                 <motion.span
-                  className="inline-flex items-center rounded-full bg-white bg-opacity-80 px-4 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm"
+                  className="inline-flex items-center rounded-full bg-white dark:bg-slate-800 bg-opacity-80 dark:bg-opacity-90 px-4 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shadow-sm"
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
@@ -129,7 +129,7 @@ export default function Home() {
               {/* Main Headline */}
               <motion.h1
                 variants={itemVariants}
-                className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-slate-900 mb-6"
+                className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-100 mb-6"
               >
                 Pinpoint seizure sources with confidence.
               </motion.h1>
@@ -137,7 +137,7 @@ export default function Home() {
               {/* Subheadline */}
               <motion.p
                 variants={itemVariants}
-                className="text-lg text-slate-700 leading-relaxed mb-8 max-w-xl"
+                className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed mb-8 max-w-xl"
               >
                 EpiCareHub empowers neurologists and neurosurgeons with interactive 3D brain visualization and AI-driven analysis to make confident surgical decisions for epilepsy patients.
               </motion.p>
@@ -152,7 +152,7 @@ export default function Home() {
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   onClick={() => handleHeroButtonClick('/dashboard')}
-                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 shadow-md shadow-emerald-600/40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 cursor-pointer"
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-700 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-semibold px-8 py-3 shadow-md shadow-emerald-600/40 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 cursor-pointer"
                 >
                   Launch EpiCareHub →
                 </motion.button>
@@ -161,7 +161,7 @@ export default function Home() {
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   onClick={() => handleHeroButtonClick('/dashboard')}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-white bg-white bg-opacity-80 hover:bg-opacity-100 text-emerald-700 font-semibold px-8 py-3 shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 cursor-pointer"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-white dark:border-slate-700 bg-white dark:bg-slate-800 bg-opacity-80 dark:bg-opacity-90 hover:bg-opacity-100 dark:hover:bg-opacity-100 text-emerald-700 dark:text-emerald-400 font-semibold px-8 py-3 shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 cursor-pointer"
                 >
                   Explore Dashboard
                 </motion.button>
@@ -186,7 +186,7 @@ export default function Home() {
       </section>
 
       {/* ============= FEATURES SECTION ============= */}
-      <section className="py-16 md:py-20 bg-white border-y border-emerald-50">
+      <section className="py-16 md:py-20 bg-white dark:bg-slate-950 border-y border-emerald-50 dark:border-slate-800">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           {/* Section Header */}
           <motion.div
@@ -196,10 +196,10 @@ export default function Home() {
             viewport={{ once: true, margin: "-100px" }}
             className="text-center mb-14"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-3">
               What EpiCareHub helps you do
             </h2>
-            <p className="text-lg text-slate-600">
+            <p className="text-lg text-slate-600 dark:text-slate-300">
               From EEG upload to surgical planning in a single workflow.
             </p>
           </motion.div>
@@ -245,7 +245,7 @@ export default function Home() {
             viewport={{ once: true, margin: "-100px" }}
             className="text-center mb-14"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100">
               How it works
             </h2>
           </motion.div>
@@ -256,7 +256,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             viewport={{ once: true, margin: "-100px" }}
-            className="rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50 to-white px-8 py-12 md:px-12 md:py-16"
+            className="rounded-3xl border border-emerald-100 dark:border-slate-700 bg-gradient-to-b from-emerald-50 dark:from-slate-800 to-white dark:to-slate-900 px-8 py-12 md:px-12 md:py-16"
           >
             <div className="grid gap-8 md:gap-12 md:grid-cols-3">
               <StepCard
@@ -288,7 +288,7 @@ export default function Home() {
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
         viewport={{ once: true }}
-        className="border-t border-emerald-50 bg-gradient-to-b from-white to-emerald-50 py-8 md:py-12"
+        className="border-t border-emerald-50 dark:border-slate-800 bg-gradient-to-b from-white dark:from-slate-950 to-emerald-50 dark:to-slate-900 py-8 md:py-12"
       >
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-0">
@@ -298,16 +298,16 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
               viewport={{ once: true }}
-              className="text-sm text-slate-600"
+              className="text-sm text-slate-600 dark:text-slate-400"
             >
               © {currentYear} EpiCareHub. All rights reserved.
             </motion.p>
 
             {/* Right: Links */}
-            <div className="flex items-center gap-8 text-sm text-slate-600">
+            <div className="flex items-center gap-8 text-sm text-slate-600 dark:text-slate-400">
               <motion.a
                 href="#"
-                className="hover:text-emerald-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-2 py-1"
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-2 py-1"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -315,7 +315,7 @@ export default function Home() {
               </motion.a>
               <motion.a
                 href="#"
-                className="hover:text-emerald-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-2 py-1"
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-2 py-1"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -323,7 +323,7 @@ export default function Home() {
               </motion.a>
               <motion.a
                 href="#"
-                className="hover:text-emerald-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-2 py-1"
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-2 py-1"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >

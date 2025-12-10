@@ -180,7 +180,7 @@ router
 // Python → Node callback endpoint (protected by API key middleware)
 router.route("/upload").post(validateInternalApiKey, async (req, res) => {
   // let patientId = req.body.patientId;
-  let { patientId, uploadId, figUrl, matUrl, images, metadata, summary, hotspots, brainViews, ...otherFields } = req.body;
+  let { patientId, uploadId, figUrl, matUrl, images, metadata, summary, hotspots, brainViews, webglOverlayUrl, ...otherFields } = req.body;
 
   try {
     patientId = validateId(patientId, "patient Id");
@@ -209,6 +209,7 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
       summary: summary || null,
       hotspots: Array.isArray(hotspots) ? hotspots : [],
       brainViews: brainViews || {},  // MNE-generated 3D brain snapshots
+      webglOverlayUrl: webglOverlayUrl || null,  // NEW: WebGL overlay JSON URL
       ...otherFields, // Include any other fields Python might send
     };
 
@@ -260,6 +261,7 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
           summary: summary || null,
           hotspots: Array.isArray(hotspots) ? hotspots : [],
           brainViews: brainViews || {},  // MNE-generated 3D brain snapshots
+          webglOverlayUrl: webglOverlayUrl || null,  // NEW: WebGL overlay JSON URL
         });
 
         console.log(
@@ -289,6 +291,7 @@ router.route("/upload").post(validateInternalApiKey, async (req, res) => {
           summary: summary || null,
           hotspots: Array.isArray(hotspots) ? hotspots : [],
           brainViews: brainViews || {},  // MNE-generated 3D brain snapshots
+          webglOverlayUrl: webglOverlayUrl || null,  // NEW: WebGL overlay JSON URL
         });
 
         console.log(`[/patients/upload] ✓ New study created with COMPLETED status`);

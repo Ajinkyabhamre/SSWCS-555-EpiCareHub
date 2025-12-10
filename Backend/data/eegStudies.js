@@ -78,6 +78,7 @@ const exportedMethods = {
       summary: studyData.summary || null,
       hotspots: studyData.hotspots || [],
       brainViews: studyData.brainViews || {},  // MNE-generated 3D brain snapshots (e.g., {left: url, right: url})
+      webglOverlayUrl: studyData.webglOverlayUrl || null,  // NEW: WebGL overlay JSON URL for interactive 3D viewer
       figureUrls: {
         topomap: studyData.figureUrls?.topomap || null,
         brainViews: studyData.figureUrls?.brainViews || [],
@@ -209,6 +210,7 @@ const exportedMethods = {
     if (results.summary) updateData.summary = results.summary;
     if (results.hotspots) updateData.hotspots = results.hotspots;
     if (results.brainViews !== undefined) updateData.brainViews = results.brainViews;  // MNE-generated 3D brain snapshots
+    if (results.webglOverlayUrl !== undefined) updateData.webglOverlayUrl = results.webglOverlayUrl;  // NEW: WebGL overlay JSON URL
     if (results.figureUrls) updateData.figureUrls = results.figureUrls;
     if (results.reportUrl) updateData.reportUrl = results.reportUrl;
     if (results.errorMessage) updateData.errorMessage = results.errorMessage;

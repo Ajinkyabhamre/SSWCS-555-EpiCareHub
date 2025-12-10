@@ -43,6 +43,9 @@ app.use(fileUpload());
 app.use(bodyParser.json());
 app.use(cors({ origin: "*" }));
 
+// Serve static files (brain meshes, etc.)
+app.use(express.static("public"));
+
 configRoutesFunction(app);
 
 export default app;

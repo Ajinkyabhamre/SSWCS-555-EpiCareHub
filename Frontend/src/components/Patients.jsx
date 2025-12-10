@@ -2,7 +2,7 @@ import React, { useCallback, useState, useEffect } from "react";
 import Snackbar from "@mui/material/Snackbar";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import DataTableComponent from "./DataTableComponent";
+import CustomDataTable from "./CustomDataTable";
 import { Dialog } from "primereact/dialog";
 import { ConfirmDialog } from "primereact/confirmdialog";
 import axios from "axios";
@@ -380,10 +380,10 @@ const Patients = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center">
-        <div className="rounded-3xl border border-emerald-50 bg-white p-8 text-center">
-          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Loading patients...</p>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950 flex items-center justify-center">
+        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 text-center">
+          <div className="w-12 h-12 border-4 border-emerald-200 dark:border-emerald-400 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400">Loading patients...</p>
         </div>
       </div>
     );
@@ -391,17 +391,17 @@ const Patients = () => {
 
   if (error && !data.length) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-4">
-        <div className="rounded-3xl border border-emerald-50 bg-white p-8 max-w-md w-full shadow-sm">
-          <h2 className="text-2xl font-bold text-slate-900 mb-3">
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950 flex items-center justify-center px-4">
+        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 max-w-md w-full shadow-sm">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
             Unable to load patients
           </h2>
-          <p className="text-slate-600 mb-6">
+          <p className="text-slate-600 dark:text-slate-400 mb-6">
             {error}. Please try again or contact support if the problem persists.
           </p>
           <button
             onClick={fetchData}
-            className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 transition-all duration-200"
+            className="w-full rounded-full bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-semibold px-6 py-3 transition-all duration-200"
           >
             Retry
           </button>
@@ -411,14 +411,14 @@ const Patients = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950">
       <div className="mx-auto max-w-7xl px-4 md:px-6 pt-10 pb-16">
         {/* Header Section */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
             Patients
           </h1>
-          <p className="text-slate-600 mb-6">
+          <p className="text-slate-600 dark:text-slate-400 mb-6">
             Manage epilepsy patients, upload EEG data, and start localization workflows.
           </p>
 
@@ -430,13 +430,13 @@ const Patients = () => {
                 setIsFile(false);
                 setVisible(true);
               }}
-              className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 transition-all duration-200"
+              className="rounded-full bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-semibold px-6 py-3 transition-all duration-200"
             >
               + Add patient
             </button>
             <button
               onClick={fetchData}
-              className="rounded-full border border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold px-6 py-3 transition-all duration-200"
+              className="rounded-full border border-emerald-200 dark:border-emerald-600 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 font-semibold px-6 py-3 transition-all duration-200"
             >
               ⟳ Refresh
             </button>
@@ -444,13 +444,13 @@ const Patients = () => {
         </div>
 
         {/* Summary Strip */}
-        <div className="rounded-2xl border border-emerald-50 bg-white p-4 mb-8 shadow-sm">
+        <div className="rounded-2xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 mb-8 shadow-sm">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                 Total Patients
               </p>
-              <p className="text-2xl font-bold text-emerald-600">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {data.length}
               </p>
             </div>
@@ -458,15 +458,14 @@ const Patients = () => {
         </div>
 
         {/* Data Table Card */}
-        <div className="rounded-3xl border border-emerald-50 bg-white p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)]">
-          <div className="mb-6 border-b border-emerald-50 pb-6">
-            <p className="text-lg font-semibold text-slate-900">All patients</p>
+        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+          <div className="mb-6 border-b border-emerald-50 dark:border-slate-700 pb-6">
+            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">All patients</p>
           </div>
-          <DataTableComponent
+          <CustomDataTable
             data={data}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
-            onUploadClick={handleUploadClick}
           />
         </div>
 
@@ -498,21 +497,21 @@ const Patients = () => {
           className="w-full md:w-2/3 lg:w-1/2"
         >
           <div className="space-y-4">
-            <p className="text-slate-600 text-sm">
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
               Upload a FIF EEG file to generate a 3D localization visualization for this patient.
             </p>
 
             {/* Drag and Drop Area */}
             <div
-              className="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 p-8 text-center cursor-pointer hover:bg-emerald-100 transition-colors"
+              className="rounded-2xl border-2 border-dashed border-emerald-200 dark:border-emerald-600 bg-emerald-50 dark:bg-slate-800 p-8 text-center cursor-pointer hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors"
               onDrop={handleFileDrop}
               onDragOver={handleDragOver}
             >
-              <FileUploadIcon className="mx-auto mb-3 text-emerald-600" style={{ fontSize: "2rem" }} />
-              <p className="text-slate-700 font-medium mb-1">
+              <FileUploadIcon className="mx-auto mb-3 text-emerald-600 dark:text-emerald-400" style={{ fontSize: "2rem" }} />
+              <p className="text-slate-700 dark:text-slate-200 font-medium mb-1">
                 Drag & drop your .fif file here, or click to browse
               </p>
-              <p className="text-xs text-slate-500 mb-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
                 Only .fif files are supported
               </p>
               <input
@@ -524,7 +523,7 @@ const Patients = () => {
               />
               <button
                 onClick={() => document.getElementById("fileInput").click()}
-                className="text-emerald-600 hover:text-emerald-700 font-semibold text-sm underline"
+                className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold text-sm underline"
               >
                 Browse files
               </button>
@@ -532,21 +531,21 @@ const Patients = () => {
 
             {/* File Preview */}
             {selectedFile && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center justify-between">
+              <div className="rounded-2xl border border-emerald-200 dark:border-emerald-600 bg-emerald-50 dark:bg-slate-800 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <FileUploadIcon className="text-emerald-600" />
+                  <FileUploadIcon className="text-emerald-600 dark:text-emerald-400" />
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                       {selectedFile.name}
                     </p>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
                       {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedFile(null)}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                 >
                   ✕
                 </button>
@@ -557,7 +556,7 @@ const Patients = () => {
             <button
               onClick={handleFileSubmit}
               disabled={!selectedFile}
-              className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 transition-all duration-200"
+              className="w-full rounded-full bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 transition-all duration-200"
             >
               Start analysis
             </button>

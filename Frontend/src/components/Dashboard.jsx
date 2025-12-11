@@ -36,10 +36,6 @@ const Dashboard = () => {
       .request(config)
       .then((response) => {
         const tempData = response.data;
-        // Normalize data: handle totatScans typo by checking both fields
-        if (!tempData.totalScans && tempData.totatScans) {
-          tempData.totalScans = tempData.totatScans;
-        }
         // Ensure arrays exist and have defaults
         tempData.ageGroupsData = tempData.ageGroupsData || [];
         tempData.uploadScansDateWiseData = tempData.uploadScansDateWiseData || [];
@@ -65,14 +61,14 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950">
-        <div className="mx-auto max-w-7xl px-4 md:px-6 pt-10 pb-16">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-10 pb-8 sm:pb-12 md:pb-16">
           {/* Header skeleton */}
-          <div className="mb-10">
-            <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg w-64 mb-2 animate-pulse" />
-            <div className="h-5 bg-gray-100 dark:bg-slate-800 rounded w-96 animate-pulse" />
+          <div className="mb-6 sm:mb-8 md:mb-10">
+            <div className="h-8 sm:h-10 bg-gray-200 dark:bg-slate-700 rounded-lg w-48 sm:w-64 mb-2 animate-pulse" />
+            <div className="h-4 sm:h-5 bg-gray-100 dark:bg-slate-800 rounded w-64 sm:w-96 animate-pulse" />
           </div>
           {/* KPI skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 mb-6 sm:mb-8">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
@@ -84,11 +80,11 @@ const Dashboard = () => {
             ))}
           </div>
           {/* Chart skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 h-96 animate-pulse"
+                className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 h-80 sm:h-72 md:h-80 lg:h-96 animate-pulse"
               />
             ))}
           </div>
@@ -138,111 +134,119 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 pt-10 pb-16">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-10 pb-8 sm:pb-12 md:pb-16">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+        <div className="mb-6 sm:mb-8 md:mb-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
             Clinical overview
           </h1>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
             Track patient volume, scan activity, and epilepsy diagnosis at a glance.
           </p>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        {/* KPI Cards - Responsive Grid */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 mb-6 sm:mb-8 md:mb-10">
           <KPICard label="Total Patients" value={data.totalPatients} />
           <KPICard label="Total Scans" value={data.totalScans} />
           <KPICard label="Epilepsy Patients" value={data.epilepsyPatient} />
           <KPICard label="Non-Epilepsy Patients" value={data.nonEpilepsyCount} />
         </div>
 
-        {/* Main Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Main Charts Grid - Responsive */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2 mb-4 sm:mb-6">
           {/* Age Distribution Chart */}
-          <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <BarChart
-              data={data.ageGroupsData || []}
-              xKey="ageGroup"
-              yKey="number"
-              title="Patient age distribution"
-              description="How patients are distributed across age groups."
-              height={320}
-            />
+          <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
+              <BarChart
+                data={data.ageGroupsData || []}
+                xKey="ageGroup"
+                yKey="number"
+                title="Patient age distribution"
+                description="How patients are distributed across age groups."
+                height={320}
+              />
+            </div>
           </div>
 
           {/* Epilepsy Status Pie Chart */}
-          <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <PieChart
-              data={[
-                { x: "Epilepsy", y: data.epilepsyPatient || 0 },
-                { x: "Non-epilepsy", y: data.nonEpilepsyCount || 0 },
-              ]}
-              title="Epilepsy diagnosis"
-              description="Patient distribution by diagnosis status."
-              height={320}
-            />
+          <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
+              <PieChart
+                data={[
+                  { x: "Epilepsy", y: data.epilepsyPatient || 0 },
+                  { x: "Non-epilepsy", y: data.nonEpilepsyCount || 0 },
+                ]}
+                title="Epilepsy diagnosis"
+                description="Patient distribution by diagnosis status."
+                height={320}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Secondary Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Secondary Charts Grid - Responsive */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2">
           {/* Scan Volume Over Time */}
-          <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <BarChart
-              data={(data.uploadScansDateWiseData || []).map((d) => {
-                try {
-                  const dateObj = new Date(d.date);
-                  const formattedDate = dateObj.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  });
-                  return {
-                    date: formattedDate !== "Invalid Date" ? formattedDate : d.date,
-                    value: d.value || 0,
-                  };
-                } catch {
-                  return {
-                    date: d.date || "",
-                    value: d.value || 0,
-                  };
-                }
-              })}
-              xKey="date"
-              yKey="value"
-              title="Scan volume over time"
-              description="EEG scans performed by date."
-              height={320}
-            />
+          <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
+              <BarChart
+                data={(data.uploadScansDateWiseData || []).map((d) => {
+                  try {
+                    const dateObj = new Date(d.date);
+                    const formattedDate = dateObj.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    });
+                    return {
+                      date: formattedDate !== "Invalid Date" ? formattedDate : d.date,
+                      value: d.value || 0,
+                    };
+                  } catch {
+                    return {
+                      date: d.date || "",
+                      value: d.value || 0,
+                    };
+                  }
+                })}
+                xKey="date"
+                yKey="value"
+                title="Scan volume over time"
+                description="EEG scans performed by date."
+                height={320}
+              />
+            </div>
           </div>
 
           {/* New Patients Over Time */}
-          <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <BarChart
-              data={(data.createdDateWiseData || []).map((d) => {
-                try {
-                  const dateObj = new Date(d.date);
-                  const formattedDate = dateObj.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  });
-                  return {
-                    date: formattedDate !== "Invalid Date" ? formattedDate : d.date,
-                    value: d.value || 0,
-                  };
-                } catch {
-                  return {
-                    date: d.date || "",
-                    value: d.value || 0,
-                  };
-                }
-              })}
-              xKey="date"
-              yKey="value"
-              title="New patients over time"
-              description="Patient enrollment by date."
-              height={320}
-            />
+          <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
+              <BarChart
+                data={(data.createdDateWiseData || []).map((d) => {
+                  try {
+                    const dateObj = new Date(d.date);
+                    const formattedDate = dateObj.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    });
+                    return {
+                      date: formattedDate !== "Invalid Date" ? formattedDate : d.date,
+                      value: d.value || 0,
+                    };
+                  } catch {
+                    return {
+                      date: d.date || "",
+                      value: d.value || 0,
+                    };
+                  }
+                })}
+                xKey="date"
+                yKey="value"
+                title="New patients over time"
+                description="Patient enrollment by date."
+                height={320}
+              />
+            </div>
           </div>
         </div>
       </div>

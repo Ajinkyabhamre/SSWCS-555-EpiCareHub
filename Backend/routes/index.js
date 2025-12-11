@@ -5,6 +5,7 @@ import mlRoutes from "./ml.js";
 import studiesRoutes from "./studies.js";
 import devRoutes from "./dev.js";
 import debugRoutes from "./debug.js";
+import analysisRoutes from "./analysis.js";
 import { Router } from "express";
 
 const constructorMethod = (app) => {
@@ -17,6 +18,9 @@ const constructorMethod = (app) => {
   // - /patients/:patientId/studies (patient-specific study routes)
   // - /studies/:studyId (study-specific routes)
   app.use("/", studiesRoutes);
+
+  // Analysis routes for triggering Python pipelines
+  app.use("/api/analysis", analysisRoutes);
 
   // DEV-ONLY: Register dev routes if EPICARE_DEV_MODE is enabled
   if (process.env.EPICARE_DEV_MODE === "true") {

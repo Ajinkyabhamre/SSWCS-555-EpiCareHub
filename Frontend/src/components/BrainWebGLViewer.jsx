@@ -9,23 +9,79 @@ import PropTypes from "prop-types";
 /**
  * BrainWebGLViewer - Interactive 3D brain viewer using React Three Fiber
  *
- * MVP Features:
- * - Load MNI-aligned brain mesh (FreeSurfer pial surfaces)
- * - Render electrodes (SEEG/ECoG) from webglOverlay.json
- * - Activity-based coloring with hotspot highlighting
- * - UI controls: brain opacity, show/hide electrodes, hotspots-only mode
- * - Hover tooltip showing electrode label + activity
- * - Click to persist selection
- * - Camera reset-to-fit
+ * COORDINATE SYSTEM DOCUMENTATION:
+ * ================================
+ * MNI RAS (Input from Python):
+ *   - X: Right (+) / Left (-)
+ *   - Y: Anterior (+) / Posterior (-)
+ *   - Z: Superior (+) / Inferior (-)
+ *   - Units: millimeters (mm)
+ *
+ * Three.js Scene (Rendered):
+ *   - X: Right (+) / Left (-)
+ *   - Y: Up (+) / Down (-)
+ *   - Z: Backward (+) / Forward (-)
+ *   - Units: arbitrary (scaled)
+ *
+ * Transform (mniMmToScene):
+ *   scale = 0.01 (1mm = 0.01 scene units)
+ *   X_scene = X_mni * scale   (Right stays Right)
+ *   Y_scene = Z_mni * scale   (Superior becomes Up)
+ *   Z_scene = -Y_mni * scale  (Anterior becomes Backward)
+ *
+ * Brain Mesh Transform (applied in BrainMesh component):
+ *   - Scale: 0.01 (same as electrodes)
+ *   - Rotation X: -π/2 (align MNI Z to Three.js Y)
+ *   - Rotation Z: π (flip front/back)
+ *
+ * Features:
+ *   - Static Views (MNE snapshots)
+ *   - Interactive 3D viewer
+ *   - Depth electrode shaft rendering
+ *   - Activity-based color mapping
+ *   - Hotspot highlighting
+ *   - Debug mode with axes and bounding boxes
  */
 
 // ============================================================================
-// UTILITY FUNCTIONS
+// COORDINATE TRANSFORMATION HELPER
 // ============================================================================
 
 /**
- * Convert activity value (0-1) to color gradient
- * Blue → Cyan → Green → Yellow → Red
+ * Convert MNI RAS coordinates (mm) to Three.js scene coordinates.
+ *
+ * This is the single source of truth for coordinate transformation.
+ * All electrode positions MUST use this function.
+ *
+ * @param {[number, number, number]} mni_mm - MNI coordinates [x, y, z] in mm
+ * @param {number} scale - Scale factor (default: 0.01 to match brain mesh)
+ * @returns {[number, number, number]} - Three.js scene coordinates [X, Y, Z]
+ *
+ * @example
+ * // Electrode at right hippocampus: [20.5, -25.3, -15.8] mm (MNI)
+ * const scenePos = mniMmToScene([20.5, -25.3, -15.8]);
+ * // Returns: [0.205, -0.158, 0.253]
+ *
+ * Sanity check:
+ *   - MNI coords typically range: X ∈ [-100, 100], Y ∈ [-100, 100], Z ∈ [-50, 100]
+ *   - Scene coords should range: X ∈ [-1, 1], Y ∈ [-0.5, 1], Z ∈ [-1, 1]
+ *   - Brain mesh bounds should overlap with electrode bounds
+ */
+function mniMmToScene([x, y, z], scale = 0.01) {
+  return [
+    x * scale,   // X: Right stays Right
+    z * scale,   // Y: Superior → Up
+    -y * scale   // Z: Anterior → Backward (note the minus sign!)
+  ];
+}
+
+// ============================================================================
+// COLOR MAPPING
+// ============================================================================
+
+/**
+ * Map activity value (0-1) to color gradient.
+ * Blue (0.0) → Cyan (0.25) → Green (0.5) → Yellow (0.75) → Red (1.0)
  */
 const activityToColor = (activity, isHotspot) => {
   if (isHotspot) {
@@ -54,14 +110,14 @@ const activityToColor = (activity, isHotspot) => {
 // ============================================================================
 
 /**
- * Brain Mesh Component - Loads and renders both hemispheres with auto-fit
+ * Brain Mesh Component - Loads and renders both hemispheres
  */
 function BrainMesh({ opacity, onBrainLoaded, brainGroupRef }) {
   const lh = useLoader(OBJLoader, "/models/brain_lh.obj");
   const rh = useLoader(OBJLoader, "/models/brain_rh.obj");
 
   const brainGroup = useMemo(() => {
-    console.log("[3D] Mesh loaded");
+    console.log("[3D] Brain mesh loaded");
 
     const group = new THREE.Group();
 
@@ -98,25 +154,32 @@ function BrainMesh({ opacity, onBrainLoaded, brainGroupRef }) {
     group.add(lhClone);
     group.add(rhClone);
 
-    // Scale and rotate to fit view (MNI coordinates in mm → scene units)
+    // Transform to match MNI coordinates
+    // Scale: 0.01 (1mm = 0.01 units, matching mniMmToScene)
+    // Rotation: Align MNI axes to Three.js axes
     group.scale.set(0.01, 0.01, 0.01);
-    group.rotation.x = -Math.PI / 2; // Align Z→Y
-    group.rotation.z = Math.PI; // Flip front/back
+    group.rotation.x = -Math.PI / 2; // MNI Z → Three.js Y
+    group.rotation.z = Math.PI;      // Flip front/back
 
     return group;
   }, [lh, rh, opacity]);
 
-  // Store ref to brain group for bounding box calculations
+  // Store ref and compute bounding box
   useEffect(() => {
     if (brainGroupRef && brainGroup) {
       brainGroupRef.current = brainGroup;
-      // Compute bounding box and notify parent
+
+      // Compute bounding box for camera auto-fit
       const box = new THREE.Box3().setFromObject(brainGroup);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       const radius = size.length() / 2;
 
-      console.log("[3D] Brain bounding box computed - radius:", radius.toFixed(2));
+      console.log("[3D] Brain bounding box computed:");
+      console.log("  - Center:", center.toArray().map(v => v.toFixed(3)).join(", "));
+      console.log("  - Size:", size.toArray().map(v => v.toFixed(3)).join(", "));
+      console.log("  - Radius:", radius.toFixed(3));
+
       onBrainLoaded({ box, size, center, radius });
     }
   }, [brainGroup, brainGroupRef, onBrainLoaded]);
@@ -141,21 +204,28 @@ BrainMesh.propTypes = {
 };
 
 /**
- * Electrode Points Component - Renders spheres with hover/click interaction
- * Sizes are computed relative to brain scale
+ * Electrode Points Component - Renders electrode spheres with depth shaft lines
  */
-function ElectrodePoints({ points, onHover, onClick, selectedLabel, brainScale }) {
+function ElectrodePoints({
+  points,
+  shaftConnections,
+  onHover,
+  onClick,
+  selectedLabel,
+  brainScale,
+  brainBounds,
+  showShafts
+}) {
   const [hoveredLabel, setHoveredLabel] = useState(null);
 
-  // Compute electrode sizes based on brain scale (much smaller than before)
+  // Compute electrode sizes based on brain scale
   const baseRadius = brainScale * 0.015; // 1.5% of brain size
-  const hotspotRadius = brainScale * 0.025; // 2.5% of brain size (clamped)
-  const maxRadius = brainScale * 0.04; // Never exceed 4% of brain size
+  const hotspotRadius = brainScale * 0.025; // 2.5% for hotspots
+  const maxRadius = brainScale * 0.04; // Max 4%
 
-  // Memoize handlers to prevent re-creation on every render
+  // Memoize handlers
   const handlePointerOver = useCallback((e, pt) => {
     e.stopPropagation();
-    // Only update if electrode changed
     if (hoveredLabel !== pt.label) {
       setHoveredLabel(pt.label);
       onHover(pt);
@@ -173,19 +243,30 @@ function ElectrodePoints({ points, onHover, onClick, selectedLabel, brainScale }
     onClick(pt);
   }, [onClick]);
 
+  // Check if electrode is outside brain bounds (for depth electrodes)
+  const isOutsideBrain = useCallback((position) => {
+    if (!brainBounds) return false;
+    const box = brainBounds.box;
+    const point = new THREE.Vector3(...position);
+    return !box.containsPoint(point);
+  }, [brainBounds]);
+
   return (
     <group>
+      {/* Electrode Spheres */}
       {points.map((pt) => {
         const isSelected = pt.label === selectedLabel;
         const isHovered = pt.label === hoveredLabel;
+        const isOutside = isOutsideBrain(pt.position);
 
-        // Compute radius with proper sizing
+        // Compute radius
         let radius = pt.isHotspot ? hotspotRadius : baseRadius;
-        // Scale up for hover/selection
         if (isSelected) radius *= 1.3;
         else if (isHovered) radius *= 1.2;
-        // Clamp to max size
         radius = Math.min(radius, maxRadius);
+
+        // Reduce opacity for electrodes far outside brain (depth contacts)
+        const opacity = isOutside ? 0.7 : 1.0;
 
         return (
           <mesh
@@ -200,8 +281,36 @@ function ElectrodePoints({ points, onHover, onClick, selectedLabel, brainScale }
               color={activityToColor(pt.activity, pt.isHotspot)}
               emissive={pt.isHotspot || isSelected ? "#ff4400" : "#000000"}
               emissiveIntensity={pt.isHotspot || isSelected ? 0.4 : 0}
+              transparent={isOutside}
+              opacity={opacity}
             />
           </mesh>
+        );
+      })}
+
+      {/* Depth Electrode Shaft Lines */}
+      {showShafts && shaftConnections.map(({ shaftId, contacts }) => {
+        if (contacts.length < 2) return null; // Need at least 2 contacts to draw line
+
+        const positions = contacts.map(c => c.position).flat();
+
+        return (
+          <line key={`shaft-${shaftId}`}>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                count={contacts.length}
+                array={new Float32Array(positions)}
+                itemSize={3}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial
+              color="#888888"
+              opacity={0.4}
+              transparent
+              linewidth={2}
+            />
+          </line>
         );
       })}
     </group>
@@ -217,10 +326,18 @@ ElectrodePoints.propTypes = {
       isHotspot: PropTypes.bool,
     })
   ).isRequired,
+  shaftConnections: PropTypes.arrayOf(
+    PropTypes.shape({
+      shaftId: PropTypes.string,
+      contacts: PropTypes.array
+    })
+  ).isRequired,
   onHover: PropTypes.func.isRequired,
   onClick: PropTypes.func.isRequired,
   selectedLabel: PropTypes.string,
   brainScale: PropTypes.number.isRequired,
+  brainBounds: PropTypes.object,
+  showShafts: PropTypes.bool.isRequired
 };
 
 /**
@@ -229,7 +346,6 @@ ElectrodePoints.propTypes = {
 function CameraController({ controlsRef, brainBounds, autoFitTrigger }) {
   const { camera } = useThree();
 
-  // Auto-fit camera to brain when bounds are available or reset is triggered
   useEffect(() => {
     if (!brainBounds || !controlsRef.current) return;
 
@@ -244,7 +360,7 @@ function CameraController({ controlsRef, brainBounds, autoFitTrigger }) {
     controlsRef.current.target.copy(center);
     controlsRef.current.update();
 
-    console.log("[3D] Camera auto-fit complete - distance:", distance.toFixed(2));
+    console.log("[3D] Camera auto-fit - distance:", distance.toFixed(3));
   }, [brainBounds, camera, controlsRef, autoFitTrigger]);
 
   return null;
@@ -256,6 +372,33 @@ CameraController.propTypes = {
   autoFitTrigger: PropTypes.number.isRequired,
 };
 
+/**
+ * Debug Helpers - Axes and bounding boxes
+ */
+function DebugHelpers({ brainBounds, electrodeBounds }) {
+  return (
+    <group>
+      {/* Axes Helper */}
+      <axesHelper args={[0.5]} />
+
+      {/* Brain Bounding Box */}
+      {brainBounds && (
+        <box3Helper args={[brainBounds.box, 0x00ff00]} />
+      )}
+
+      {/* Electrode Bounding Box */}
+      {electrodeBounds && (
+        <box3Helper args={[electrodeBounds, 0xff0000]} />
+      )}
+    </group>
+  );
+}
+
+DebugHelpers.propTypes = {
+  brainBounds: PropTypes.object,
+  electrodeBounds: PropTypes.object,
+};
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -263,17 +406,21 @@ CameraController.propTypes = {
 const BrainWebGLViewer = ({ uploadId, study }) => {
   // Data state
   const [electrodePoints, setElectrodePoints] = useState([]);
+  const [shaftConnections, setShaftConnections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Brain geometry state
   const [brainBounds, setBrainBounds] = useState(null);
+  const [electrodeBounds, setElectrodeBounds] = useState(null);
   const brainGroupRef = useRef();
 
   // UI state
   const [brainOpacity, setBrainOpacity] = useState(1.0);
   const [showElectrodes, setShowElectrodes] = useState(true);
+  const [showShafts, setShowShafts] = useState(true);
   const [hotspotsOnly, setHotspotsOnly] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   const [hoveredElectrode, setHoveredElectrode] = useState(null);
   const [selectedElectrode, setSelectedElectrode] = useState(null);
   const [autoFitTrigger, setAutoFitTrigger] = useState(0);
@@ -287,11 +434,10 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
   // Callback when brain mesh is loaded
   const handleBrainLoaded = useCallback((bounds) => {
     setBrainBounds(bounds);
-    // Trigger initial auto-fit
     setAutoFitTrigger((prev) => prev + 1);
   }, []);
 
-  // Memoized hover handler to prevent re-creation
+  // Memoized hover handler
   const handleHover = useCallback((electrode) => {
     setHoveredElectrode(electrode);
   }, []);
@@ -301,7 +447,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
     setSelectedElectrode(electrode);
   }, []);
 
-  // Handle reset button - triggers auto-fit
+  // Handle reset button
   const handleResetCamera = useCallback(() => {
     setAutoFitTrigger((prev) => prev + 1);
   }, []);
@@ -325,46 +471,79 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
         }
 
         const data = await response.json();
-        console.log("[3D] Overlay loaded");
+        console.log("[3D] Overlay loaded:", data);
 
-        // Parse electrode data (support both old and new formats)
+        // Parse electrodes with new schema
         const electrodes = data.electrodes || [];
         const hotspotLabels = new Set(data.hotspots || []);
 
+        // Build electrode points with unified coordinate transform
         const points = electrodes.map((electrode) => {
-          // Support both { coord: [x,y,z] } and { x, y, z }
-          const x = electrode.x ?? electrode.coord?.[0] ?? 0;
-          const y = electrode.y ?? electrode.coord?.[1] ?? 0;
-          const z = electrode.z ?? electrode.coord?.[2] ?? 0;
+          // Support both new schema (coord_mni_mm) and legacy (coord, x/y/z)
+          const mni_mm = electrode.coord_mni_mm ||
+                         electrode.coord ||
+                         [electrode.x || 0, electrode.y || 0, electrode.z || 0];
 
-          // Convert MNI mm coordinates to scene coordinates
-          const scale = 0.01; // Match brain scale
-          const position = [
-            x * scale,
-            z * scale, // Z becomes Y (up) due to rotation
-            -y * scale, // Y becomes -Z (depth) due to rotation
-          ];
+          // UNIFIED TRANSFORM: Use mniMmToScene helper
+          const position = mniMmToScene(mni_mm);
 
-          // Support both { value } and { activity }
+          // Support both new (activity, isHotspot) and legacy (value, hotspot)
           const activity = electrode.activity ?? electrode.value ?? 0;
-          const isHotspot =
-            electrode.hotspot === true || hotspotLabels.has(electrode.label);
+          const isHotspot = electrode.isHotspot ??
+                           ((electrode.hotspot === true) || hotspotLabels.has(electrode.label));
 
           return {
             label: electrode.label || `E${electrodes.indexOf(electrode)}`,
             position,
             activity,
             isHotspot,
+            type: electrode.type || "unknown",
+            shaftId: electrode.shaftId || electrode.label,
+            contactIndex: electrode.contactIndex ?? 0
           };
         });
 
-        console.log(
-          `[3D] Hotspot mapping done: ${points.length} electrodes, ${
-            points.filter((p) => p.isHotspot).length
-          } hotspots`
-        );
+        // Group electrodes by shaft for line rendering
+        const shafts = {};
+        points.forEach(pt => {
+          if (pt.type === "depth") {
+            if (!shafts[pt.shaftId]) {
+              shafts[pt.shaftId] = [];
+            }
+            shafts[pt.shaftId].push(pt);
+          }
+        });
+
+        // Sort contacts within each shaft by contactIndex
+        const shaftConnectionsArray = Object.entries(shafts).map(([shaftId, contacts]) => ({
+          shaftId,
+          contacts: contacts.sort((a, b) => a.contactIndex - b.contactIndex)
+        }));
 
         setElectrodePoints(points);
+        setShaftConnections(shaftConnectionsArray);
+
+        // Compute electrode bounding box for debug mode
+        if (points.length > 0) {
+          const elecBox = new THREE.Box3();
+          points.forEach(pt => {
+            elecBox.expandByPoint(new THREE.Vector3(...pt.position));
+          });
+          setElectrodeBounds(elecBox);
+
+          console.log("[3D] Electrode bounds:");
+          const min = elecBox.min.toArray().map(v => v.toFixed(3)).join(", ");
+          const max = elecBox.max.toArray().map(v => v.toFixed(3)).join(", ");
+          console.log("  - Min:", min);
+          console.log("  - Max:", max);
+        }
+
+        console.log(
+          `[3D] Loaded ${points.length} electrodes, ${
+            points.filter((p) => p.isHotspot).length
+          } hotspots, ${shaftConnectionsArray.length} shafts`
+        );
+
         setLoading(false);
       } catch (err) {
         console.error("[3D] Error fetching overlay:", err);
@@ -376,7 +555,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
     fetchOverlay();
   }, [study?.webglOverlayUrl]);
 
-  // Filter electrodes based on hotspots-only mode
+  // Filter electrodes based on UI settings
   const visibleElectrodes = useMemo(() => {
     if (!showElectrodes) return [];
     if (hotspotsOnly) return electrodePoints.filter((p) => p.isHotspot);
@@ -386,7 +565,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
   // Compute brain scale for electrode sizing
   const brainScale = brainBounds?.radius ?? 1.0;
 
-  // Compute min/max camera distances based on brain size
+  // Compute min/max camera distances
   const minDistance = brainScale * 0.6;
   const maxDistance = brainScale * 5.0;
 
@@ -418,7 +597,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
       <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 text-sm border border-amber-200 dark:border-amber-800">
         <p className="font-semibold mb-1">WebGL overlay not available</p>
         <p>
-          Please rerun the HUMAN_MTL pipeline so the overlay JSON is generated and uploaded.
+          Please run the HUMAN_MTL pipeline to generate the overlay JSON.
         </p>
       </div>
     );
@@ -428,15 +607,14 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
     <div className="space-y-3">
       {/* Info Banner */}
       <div className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-3 rounded border border-slate-200 dark:border-slate-700">
-        🧠 <strong>Interactive 3D brain viewer (MVP)</strong> – MNI-aligned FreeSurfer template
-        with electrode positions from the analysis.
+        🧠 <strong>Interactive 3D Brain Viewer</strong> – MNI-aligned FreeSurfer template with depth electrodes
         <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-          <strong>Controls:</strong> Left-click + drag to rotate • Scroll to zoom • Right-click +
-          drag to pan • Hover over electrodes for info • Click to select
+          <strong>Controls:</strong> Left-drag to rotate • Scroll to zoom • Right-drag to pan • Hover/click electrodes for info
         </div>
         {electrodePoints.length > 0 && (
           <div className="mt-2 text-xs">
             <strong>Loaded:</strong> {electrodePoints.length} electrodes •{" "}
+            {shaftConnections.length} shafts •{" "}
             {electrodePoints.filter((p) => p.isHotspot).length} hotspots
           </div>
         )}
@@ -444,7 +622,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
 
       {/* Control Panel */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Brain Opacity */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -483,6 +661,22 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
             </button>
           </div>
 
+          {/* Show Shafts */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Shafts</label>
+            <button
+              onClick={() => setShowShafts(!showShafts)}
+              className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+                showShafts
+                  ? "bg-emerald-600 dark:bg-emerald-700 text-white"
+                  : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+              }`}
+              disabled={!showElectrodes}
+            >
+              {showShafts ? "Visible" : "Hidden"}
+            </button>
+          </div>
+
           {/* Hotspots Only */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Filter</label>
@@ -511,9 +705,24 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
           </div>
         </div>
 
+        {/* Debug Mode Toggle */}
+        <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={debugMode}
+              onChange={(e) => setDebugMode(e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-slate-700 dark:text-slate-300">
+              Debug Mode (show axes & bounding boxes)
+            </span>
+          </label>
+        </div>
+
         {/* Selected/Hovered Electrode Info */}
         {(selectedElectrode || hoveredElectrode) && (
-          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
             <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               {selectedElectrode ? "Selected Electrode" : "Hover Info"}
             </div>
@@ -522,12 +731,18 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
                 {(selectedElectrode || hoveredElectrode).label}
               </div>
               <div className="text-slate-600 dark:text-slate-300 text-xs mt-1">
-                Activity:{" "}
-                <span className="font-semibold">
-                  {((selectedElectrode || hoveredElectrode).activity * 100).toFixed(1)}%
-                </span>
+                <div>
+                  Activity:{" "}
+                  <span className="font-semibold">
+                    {((selectedElectrode || hoveredElectrode).activity * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-slate-500 dark:text-slate-400 mt-1">
+                  Type: {(selectedElectrode || hoveredElectrode).type} •{" "}
+                  Shaft: {(selectedElectrode || hoveredElectrode).shaftId}
+                </div>
                 {(selectedElectrode || hoveredElectrode).isHotspot && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-xs font-semibold">
+                  <span className="mt-2 inline-block px-1.5 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-xs font-semibold">
                     HOTSPOT
                   </span>
                 )}
@@ -545,7 +760,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
         )}
       </div>
 
-      {/* 3D Canvas - Keep dark background for 3D viewer in both themes */}
+      {/* 3D Canvas */}
       <div className="w-full h-[600px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-950 overflow-hidden">
         <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
           <color attach="background" args={["#0f172a"]} />
@@ -565,15 +780,26 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
             {visibleElectrodes.length > 0 && brainBounds && (
               <ElectrodePoints
                 points={visibleElectrodes}
+                shaftConnections={shaftConnections}
                 onHover={handleHover}
                 onClick={handleClick}
                 selectedLabel={selectedElectrode?.label}
                 brainScale={brainScale}
+                brainBounds={brainBounds}
+                showShafts={showShafts}
+              />
+            )}
+
+            {/* Debug Helpers */}
+            {debugMode && (
+              <DebugHelpers
+                brainBounds={brainBounds}
+                electrodeBounds={electrodeBounds}
               />
             )}
           </Suspense>
 
-          {/* Camera Controls with damping for smooth interaction */}
+          {/* Camera Controls */}
           <OrbitControls
             ref={controlsRef}
             enablePan

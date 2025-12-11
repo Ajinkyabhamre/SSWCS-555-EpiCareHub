@@ -191,7 +191,7 @@ const exportedMethods = {
       }
       if (patientsList[i].isEpilepsy) epilepseyCount++;
     }
-    res.totatScans = total;
+    res.totalScans = total; // Fixed typo: was 'totatScans'
     res.epilepsyPatient = epilepseyCount;
     res.nonEpilepsyCount = patientsList.length - epilepseyCount;
 

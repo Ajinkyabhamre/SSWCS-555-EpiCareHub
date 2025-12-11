@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -248,9 +248,9 @@ const UserInput = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950">
       {/* Main Content */}
-      <div className="flex items-center justify-center px-4 py-12 md:py-16">
+      <div className="flex items-center justify-center px-4 py-12 md:py-16 lg:py-20">
         <div className="w-full max-w-6xl">
           <div className="grid gap-8 md:grid-cols-2 items-start">
             {/* Left Column: Register Form */}
@@ -261,23 +261,23 @@ const UserInput = () => {
               className="flex flex-col justify-start"
             >
               <motion.div variants={itemVariants} className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                   Create Account
                 </h1>
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-300">
                   Register to access EpiCareHub and manage patient data
                 </p>
               </motion.div>
 
               <motion.div variants={itemVariants} className="space-y-6">
-                <div className="rounded-2xl border border-emerald-100 bg-white p-8 shadow-sm">
+                <div className="rounded-2xl border border-emerald-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm">
                   <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Success Message */}
                     {successMessage && (
                       <motion.div
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+                        className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-3 text-sm text-emerald-700 dark:text-emerald-300"
                       >
                         {successMessage}
                       </motion.div>
@@ -288,7 +288,7 @@ const UserInput = () => {
                       <motion.div
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                        className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300"
                       >
                         {registrationError}
                       </motion.div>
@@ -296,7 +296,7 @@ const UserInput = () => {
 
                     {/* First Name */}
                     <div>
-                      <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 mb-1.5">
+                      <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                         First Name
                       </label>
                       <input
@@ -309,8 +309,8 @@ const UserInput = () => {
                         placeholder="John"
                         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
                           fieldErrors.firstName
-                            ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                            : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                            ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 text-slate-900 dark:text-slate-100'
+                            : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                         }`}
                       />
                       {fieldErrors.firstName && (
@@ -326,7 +326,7 @@ const UserInput = () => {
 
                     {/* Last Name */}
                     <div>
-                      <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 mb-1.5">
+                      <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                         Last Name
                       </label>
                       <input
@@ -339,8 +339,8 @@ const UserInput = () => {
                         placeholder="Doe"
                         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
                           fieldErrors.lastName
-                            ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                            : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                            ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 text-slate-900 dark:text-slate-100'
+                            : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                         }`}
                       />
                       {fieldErrors.lastName && (
@@ -356,7 +356,7 @@ const UserInput = () => {
 
                     {/* Username */}
                     <div>
-                      <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1.5">
+                      <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                         Username
                       </label>
                       <input
@@ -369,27 +369,27 @@ const UserInput = () => {
                         placeholder="johndoe"
                         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
                           fieldErrors.username
-                            ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                            : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                            ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 text-slate-900 dark:text-slate-100'
+                            : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                         }`}
                       />
                       {fieldErrors.username && (
                         <motion.p
                           initial={{ opacity: 0, y: -5 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="mt-1.5 text-sm text-red-600"
+                          className="mt-1.5 text-sm text-red-600 dark:text-red-400"
                         >
                           {fieldErrors.username}
                         </motion.p>
                       )}
-                      <p className="mt-2 text-xs text-slate-500">
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                         3-20 characters, letters, numbers, and underscores only
                       </p>
                     </div>
 
                     {/* Email */}
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                      <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                         Email
                       </label>
                       <input
@@ -402,8 +402,8 @@ const UserInput = () => {
                         placeholder="john@example.com"
                         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
                           fieldErrors.email
-                            ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                            : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                            ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 text-slate-900 dark:text-slate-100'
+                            : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                         }`}
                       />
                       {fieldErrors.email && (
@@ -419,7 +419,7 @@ const UserInput = () => {
 
                     {/* Password */}
                     <div>
-                      <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
+                      <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                         Password
                       </label>
                       <input
@@ -432,27 +432,27 @@ const UserInput = () => {
                         placeholder="Enter password"
                         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
                           fieldErrors.password
-                            ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                            : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                            ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 text-slate-900 dark:text-slate-100'
+                            : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                         }`}
                       />
                       {fieldErrors.password && (
                         <motion.p
                           initial={{ opacity: 0, y: -5 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="mt-1.5 text-sm text-red-600"
+                          className="mt-1.5 text-sm text-red-600 dark:text-red-400"
                         >
                           {fieldErrors.password}
                         </motion.p>
                       )}
-                      <p className="mt-2 text-xs text-slate-500">
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                         Must be 8+ characters with uppercase, lowercase, number, and special character
                       </p>
                     </div>
 
                     {/* Confirm Password */}
                     <div>
-                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1.5">
+                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                         Confirm Password
                       </label>
                       <input
@@ -465,8 +465,8 @@ const UserInput = () => {
                         placeholder="Confirm password"
                         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
                           fieldErrors.confirmPassword
-                            ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                            : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                            ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 text-slate-900 dark:text-slate-100'
+                            : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                         }`}
                       />
                       {fieldErrors.confirmPassword && (
@@ -482,7 +482,7 @@ const UserInput = () => {
 
                     {/* User Type */}
                     <div>
-                      <label htmlFor="userType" className="block text-sm font-medium text-slate-700 mb-1.5">
+                      <label htmlFor="userType" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                         User Type
                       </label>
                       <select
@@ -490,7 +490,7 @@ const UserInput = () => {
                         name="userType"
                         value={formData.userType}
                         onChange={handleChange}
-                        className="w-full rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
+                        className="w-full rounded-xl border border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
                       >
                         <option value="user">Regular User</option>
                         <option value="admin">Administrator</option>
@@ -504,7 +504,7 @@ const UserInput = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                       >
-                        <label htmlFor="secretKey" className="block text-sm font-medium text-slate-700 mb-1.5">
+                        <label htmlFor="secretKey" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                           Admin Secret Key
                         </label>
                         <input
@@ -517,15 +517,15 @@ const UserInput = () => {
                           placeholder="Enter admin secret key"
                           className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
                             fieldErrors.secretKey
-                              ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                              : 'border-emerald-100 bg-emerald-50/40 focus:bg-white focus:ring-emerald-500'
+                              ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500 text-slate-900 dark:text-slate-100'
+                              : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                           }`}
                         />
                         {fieldErrors.secretKey && (
                           <motion.p
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mt-1.5 text-sm text-red-600"
+                            className="mt-1.5 text-sm text-red-600 dark:text-red-400"
                           >
                             {fieldErrors.secretKey}
                           </motion.p>
@@ -539,7 +539,7 @@ const UserInput = () => {
                       disabled={isSubmitting}
                       whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
                       whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-                      className="w-full rounded-full bg-emerald-600 py-3 font-semibold text-white shadow-md shadow-emerald-600/40 transition-all duration-200 hover:bg-emerald-700 disabled:opacity-70 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                      className="w-full rounded-full bg-emerald-600 dark:bg-emerald-700 py-3 font-semibold text-white shadow-md shadow-emerald-600/40 transition-all duration-200 hover:bg-emerald-700 dark:hover:bg-emerald-600 disabled:opacity-70 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
                     >
                       {isSubmitting ? 'Registering...' : 'Create Account'}
                     </motion.button>
@@ -547,11 +547,11 @@ const UserInput = () => {
                 </div>
 
                 {/* Sign In Link */}
-                <p className="text-center text-sm text-slate-600">
+                <p className="text-center text-sm text-slate-600 dark:text-slate-300">
                   Already have an account?{' '}
                   <Link
                     to="/signin"
-                    className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-1"
+                    className="font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded px-1"
                   >
                     Sign in here
                   </Link>
@@ -564,14 +564,14 @@ const UserInput = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-              className="hidden md:flex md:justify-center items-start pt-8"
+              className="hidden md:flex md:justify-center items-center"
             >
               <div className="text-center">
                 <div className="mb-6 text-8xl">🔐</div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                   Secure Registration
                 </h2>
-                <p className="text-slate-600 max-w-xs">
+                <p className="text-slate-600 dark:text-slate-300 max-w-xs">
                   Create a secure account to manage your neurological research and patient data
                 </p>
               </div>

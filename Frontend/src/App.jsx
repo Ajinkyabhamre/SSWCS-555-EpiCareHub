@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useParams,
 } from "react-router-dom";
 import "./App.scss";
 import Home from "./components/Home";
@@ -17,6 +18,12 @@ import Dashboard from "./components/Dashboard";
 import AdminPage from "./components/AdminPage";
 import RequireAuth from "./routes/RequireAuth";
 import PublicOnly from "./routes/PublicOnly";
+
+// Redirect component for legacy brain routes
+const BrainRedirect = () => {
+  const { patientId } = useParams();
+  return <Navigate to={`/patient/${patientId}`} replace />;
+};
 
 const App = () => {
   const [isAuth, setIsAuth] = useState(localStorage.getItem("isLoggedIn"));
@@ -79,11 +86,12 @@ const App = () => {
               </RequireAuth>
             }
           />
+          {/* Legacy brain routes - redirect to patient details */}
           <Route
             path="/patient/:patientId/brain/:uploadId"
             element={
               <RequireAuth>
-                <Brain />
+                <BrainRedirect />
               </RequireAuth>
             }
           />
@@ -91,7 +99,7 @@ const App = () => {
             path="/brain"
             element={
               <RequireAuth>
-                <Brain />
+                <Dashboard />
               </RequireAuth>
             }
           />

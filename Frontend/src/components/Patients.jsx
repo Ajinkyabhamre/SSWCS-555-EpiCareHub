@@ -380,10 +380,10 @@ const Patients = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950 flex items-center justify-center">
-        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 text-center">
-          <div className="w-12 h-12 border-4 border-emerald-200 dark:border-emerald-400 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">Loading patients...</p>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950 flex items-center justify-center px-4">
+        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 sm:p-8 text-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-emerald-200 dark:border-emerald-400 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin mx-auto mb-3 sm:mb-4" />
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">Loading patients...</p>
         </div>
       </div>
     );
@@ -392,11 +392,11 @@ const Patients = () => {
   if (error && !data.length) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950 flex items-center justify-center px-4">
-        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 max-w-md w-full shadow-sm">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 sm:p-8 max-w-md w-full shadow-sm">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
             Unable to load patients
           </h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-6">
             {error}. Please try again or contact support if the problem persists.
           </p>
           <button
@@ -412,13 +412,13 @@ const Patients = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 pt-10 pb-16">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-10 pb-8 sm:pb-12 md:pb-16">
         {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
             Patients
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-4 sm:mb-6">
             Manage epilepsy patients, upload EEG data, and start localization workflows.
           </p>
 
@@ -444,13 +444,13 @@ const Patients = () => {
         </div>
 
         {/* Summary Strip */}
-        <div className="rounded-2xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 mb-8 shadow-sm">
+        <div className="rounded-2xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                 Total Patients
               </p>
-              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">
                 {data.length}
               </p>
             </div>
@@ -458,9 +458,9 @@ const Patients = () => {
         </div>
 
         {/* Data Table Card */}
-        <div className="rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-          <div className="mb-6 border-b border-emerald-50 dark:border-slate-700 pb-6">
-            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">All patients</p>
+        <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+          <div className="mb-4 sm:mb-6 border-b border-emerald-50 dark:border-slate-700 pb-4 sm:pb-6">
+            <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">All patients</p>
           </div>
           <CustomDataTable
             data={data}

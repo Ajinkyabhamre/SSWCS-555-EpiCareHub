@@ -132,7 +132,6 @@ const PatientDetails = () => {
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-      console.log("[PHASE 6] Creating study record...");
       const studyResponse = await axios.post(
         `${apiUrl}/patients/${patientId}/studies`,
         {
@@ -144,8 +143,6 @@ const PatientDetails = () => {
       const createdStudy = studyResponse.data.study;
       const uploadId = createdStudy.uploadId;
 
-      console.log(`[PHASE 6] Study created with uploadId: ${uploadId}`);
-
       setProcessingOverlay((prev) => ({
         ...prev,
         currentStepId: "preprocess",
@@ -155,16 +152,10 @@ const PatientDetails = () => {
       const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
       const endpoint = devMode ? "/visualize_brain_dev" : "/visualize_brain";
 
-      if (devMode) {
-        console.log("[PHASE 6] [DEV MODE] Using dev endpoint:", endpoint);
-      }
-
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("patientId", patientId);
       formData.append("uploadId", uploadId);
-
-      console.log(`[PHASE 6] Calling Python ${endpoint} with uploadId: ${uploadId}`);
 
       const stepSequence = ["localize", "visualize", "save", "summarize"];
       let stepIndex = 0;
@@ -184,8 +175,6 @@ const PatientDetails = () => {
       });
 
       clearInterval(stepIntervalRef.current);
-
-      console.log("[PHASE 6] Python processing initiated successfully");
 
       pollingIntervalRef.current = setInterval(async () => {
         try {
@@ -253,11 +242,11 @@ const PatientDetails = () => {
             }
           }
         } catch (pollError) {
-          console.error("[PHASE 6] Polling error:", pollError);
+          // Polling error - will retry
         }
       }, devMode ? 2000 : 5000);
     } catch (error) {
-      console.error("[PHASE 6] Error in upload flow:", error);
+      console.error("EEG upload failed:", error.message);
 
       if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
@@ -324,9 +313,7 @@ const PatientDetails = () => {
             )
           );
       })
-      .catch((error) => {
-        console.error('Error fetching patient data:', error);
-      });
+      .catch(() => {});
 
     axios
       .get(`${apiUrl}/patients/${id}/studies`)
@@ -341,9 +328,7 @@ const PatientDetails = () => {
           }
         }
       })
-      .catch((error) => {
-        console.error('Error fetching studies:', error);
-      });
+      .catch(() => {});
   }, [dispatch, id, selectedUpload, selectedStudyForViewer]);
 
   useEffect(() => {
@@ -530,9 +515,7 @@ const PatientDetails = () => {
                     }
                   }
                 })
-                .catch((error) => {
-                  console.error('Error reloading studies:', error);
-                });
+                .catch(() => {});
             }}
           />
         </motion.div>

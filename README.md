@@ -129,6 +129,82 @@ cd SSWCS-555-EpiCareHub
 
 ---
 
+## 🔐 Environment Configuration Overview
+
+**IMPORTANT**: EpiCareHub requires environment variables for database connections, API keys, and service configuration. **Never commit real secrets to git**.
+
+### Which Services Require Environment Files?
+
+| Service | Environment File | Required For |
+|---------|------------------|--------------|
+| **Frontend** | `Frontend/.env` | Local development, Docker builds |
+| **Backend** | `Backend/.env` | Local development, Docker runtime |
+| **Python API** | `Localization-Algorithm/.env` | Local development, Docker runtime |
+
+### Setup Instructions
+
+#### For Local Development:
+
+1. **Copy the template files** for each service:
+   ```bash
+   # Frontend
+   cp Frontend/.env.example Frontend/.env
+
+   # Backend
+   cp Backend/.env.example Backend/.env
+
+   # Python API
+   cp Localization-Algorithm/.env.example Localization-Algorithm/.env
+   ```
+
+2. **Edit each `.env` file** and replace placeholders with your real values:
+   - `<YOUR_MONGODB_URI>` → MongoDB Atlas connection string
+   - `<YOUR_CLOUDINARY_*>` → Cloudinary credentials (get free account at [cloudinary.com](https://cloudinary.com))
+   - `<YOUR_SESSION_SECRET>` → Generate with `openssl rand -hex 32`
+   - `<YOUR_SECURE_API_KEY>` → Generate with `openssl rand -hex 16` (must match in Backend and Python API)
+
+3. **Verify setup**: Each service will fail to start if required environment variables are missing.
+
+#### For Docker / EC2 Deployment:
+
+- Use the **root-level** `.env.example` as a template
+- Set Docker-specific URLs (e.g., `http://backend:3000` instead of `http://localhost:3000`)
+- See [DEPLOYMENT_CONTEXT_FOR_CHATGPT.md](./DEPLOYMENT_CONTEXT_FOR_CHATGPT.md) for full deployment guide
+
+### Security Best Practices
+
+⚠️ **NEVER commit these files to git**:
+- `Frontend/.env`
+- `Backend/.env`
+- `Localization-Algorithm/.env`
+
+✅ **Safe to commit**:
+- `Frontend/.env.example`
+- `Backend/.env.example`
+- `Localization-Algorithm/.env.example`
+
+All `.env` files are already in `.gitignore` to prevent accidental commits.
+
+### Quick Reference: Required Variables
+
+**Backend** (most critical):
+- `MONGODB_URI` - Database connection
+- `MONGODB_DB_NAME` - Database name
+- `SESSION_SECRET` - Session encryption
+- `EPICARE_INTERNAL_API_KEY` - Service authentication
+
+**Python API**:
+- `CLOUDINARY_CLOUD_NAME` - Image hosting
+- `CLOUDINARY_API_KEY` - Image hosting
+- `CLOUDINARY_API_SECRET` - Image hosting
+- `EPICARE_INTERNAL_API_KEY` - Service authentication (must match Backend)
+
+**Frontend** (build-time only):
+- `VITE_API_BASE_URL` - Backend URL
+- `VITE_PYTHON_API_URL` - Python API URL
+
+---
+
 ## 🐍 ML Pipeline Setup
 
 The Python pipeline processes brain data and generates 3D visualizations.
@@ -430,6 +506,248 @@ npm test
 ```bash
 cd Localization-Algorithm
 pytest
+```
+
+---
+
+## 🐳 Docker & Deployment
+
+### Local Docker Run
+
+EpiCareHub is fully containerized for easy deployment. All services (Frontend, Backend, Brain API) run in Docker containers while connecting to cloud-hosted MongoDB and Cloudinary.
+
+**Prerequisites:**
+- Docker Engine 20.10+ and Docker Compose 2.0+
+- Cloud MongoDB instance (MongoDB Atlas recommended)
+- Cloudinary account for image storage
+
+**Quick Start:**
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/2024S-SSW-555-EpiCareHub/SSWCS-555-EpiCareHub.git
+cd SSWCS-555-EpiCareHub
+
+# 2. Create environment file
+cp .env.example .env
+
+# 3. Edit .env and fill in your credentials:
+#    - MONGO_URL (your MongoDB Atlas connection string)
+#    - CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+#    - SESSION_SECRET (random secret key)
+
+# 4. Build and start all services
+docker compose build
+docker compose up -d
+
+# 5. Check service health
+docker compose ps
+
+# 6. View logs
+docker compose logs -f
+```
+
+**Access the application:**
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:3000
+- **Brain API:** http://localhost:8000 (optional)
+
+**Stop services:**
+```bash
+docker compose down
+
+# To also remove volumes (uploaded data):
+docker compose down -v
+```
+
+### Docker Architecture
+
+The Docker setup includes three services:
+
+| Service | Container | Port | Description |
+|---------|-----------|------|-------------|
+| **frontend** | epicarehub-frontend | 5173 → 80 | React app (Nginx) |
+| **backend** | epicarehub-backend | 3000 | Node/Express API |
+| **brain-api** | epicarehub-brain-api | 8000 | Python/FastAPI for EEG processing |
+
+**Key Points:**
+- Services communicate via Docker network (`epicarehub-network`)
+- MongoDB and Cloudinary are **cloud-hosted** (not in containers)
+- Frontend calls backend at `http://localhost:3000`
+- Backend calls brain-api at `http://brain-api:8000` (Docker network)
+- Brain API calls backend at `http://backend:3000` for callbacks
+
+### EC2 Deployment
+
+Deploy all services on a single EC2 instance:
+
+**1. Launch EC2 Instance**
+- **OS:** Ubuntu 22.04 LTS
+- **Instance Type:** t3.medium or larger (2 vCPU, 4 GB RAM minimum)
+- **Storage:** 30 GB or more
+- **Security Group:**
+  - Inbound: Port 80 (HTTP), Port 443 (HTTPS), Port 22 (SSH)
+  - Optionally: Port 3000 (Backend API), Port 5173 (Frontend dev)
+
+**2. Install Docker on EC2**
+
+```bash
+# SSH into your EC2 instance
+ssh -i your-key.pem ubuntu@<EC2_PUBLIC_IP>
+
+# Update packages
+sudo apt update && sudo apt upgrade -y
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Add user to docker group
+sudo usermod -aG docker ubuntu
+
+# Install Docker Compose
+sudo apt install docker-compose-plugin -y
+
+# Verify installation
+docker --version
+docker compose version
+
+# Log out and back in for group changes to take effect
+exit
+ssh -i your-key.pem ubuntu@<EC2_PUBLIC_IP>
+```
+
+**3. Deploy Application**
+
+```bash
+# Clone repository
+git clone https://github.com/2024S-SSW-555-EpiCareHub/SSWCS-555-EpiCareHub.git
+cd SSWCS-555-EpiCareHub
+
+# Create .env file
+cp .env.example .env
+nano .env  # or vim .env
+
+# Edit .env with your cloud credentials:
+# - MONGO_URL=mongodb+srv://...  (your Atlas connection string)
+# - CLOUDINARY_* credentials
+# - SESSION_SECRET (generate a strong random key)
+
+# Build and start services
+docker compose build
+docker compose up -d
+
+# Check logs
+docker compose logs -f backend
+docker compose logs -f brain-api
+docker compose logs -f frontend
+```
+
+**4. Access Application**
+
+- Frontend: http://\<EC2_PUBLIC_IP\>:5173
+- Backend API: http://\<EC2_PUBLIC_IP\>:3000
+
+**5. Production Improvements (Optional)**
+
+For production, consider:
+
+**A. Nginx Reverse Proxy**
+
+Configure Nginx on EC2 host to:
+- Serve frontend on port 80/443
+- Proxy `/api` requests to backend:3000
+- Handle SSL/TLS certificates (Let's Encrypt)
+
+**B. Domain Name**
+
+- Register a domain and point it to your EC2 Elastic IP
+- Update `VITE_API_BASE_URL` in docker-compose.yml build args
+
+**C. HTTPS with Let's Encrypt**
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+```
+
+**D. Docker Health Checks**
+
+Services include health checks by default:
+```bash
+docker compose ps  # Shows service health status
+```
+
+**E. Monitoring & Logging**
+
+```bash
+# View logs
+docker compose logs -f
+
+# Monitor resource usage
+docker stats
+
+# Auto-restart on failure
+# (already configured with "restart: unless-stopped" in docker-compose.yml)
+```
+
+**6. Updating the Application**
+
+```bash
+# Pull latest changes
+git pull origin main
+
+# Rebuild and restart services
+docker compose down
+docker compose build
+docker compose up -d
+```
+
+### Environment Variables Reference
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MONGO_URL` | MongoDB connection string | `mongodb+srv://user:pass@cluster.mongodb.net/epicarehub` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | `your-cloud-name` |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | `123456789012345` |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | `abcdef123456` |
+| `SESSION_SECRET` | Express session secret | Random 32+ char string |
+| `EPICARE_INTERNAL_API_KEY` | Internal API key for service communication | Random string |
+| `VITE_API_BASE_URL` | Frontend API base URL | `http://localhost:3000` or `http://your-domain.com/api` |
+
+### Troubleshooting Docker Deployment
+
+**Issue: Services fail to start**
+```bash
+# Check logs
+docker compose logs
+
+# Check specific service
+docker compose logs backend
+docker compose logs brain-api
+```
+
+**Issue: Backend can't connect to MongoDB**
+- Verify `MONGO_URL` in `.env` is correct
+- Ensure MongoDB Atlas allows connections from EC2 IP
+- Check network access in Atlas: Network Access → Add IP Address → Allow from Anywhere (or specific EC2 IP)
+
+**Issue: Frontend can't reach backend**
+- Verify `VITE_API_BASE_URL` is set correctly
+- Frontend must use EC2 public IP or domain (not `localhost` when accessed remotely)
+- Check EC2 security group allows inbound traffic on port 3000
+
+**Issue: Brain API fails to start**
+- Check for Python dependency errors in logs
+- Verify system dependencies are installed (handled by Dockerfile)
+- Ensure sufficient disk space for pip packages
+
+**Issue: Permission denied errors**
+```bash
+# Fix Docker permissions
+sudo chmod 666 /var/run/docker.sock
+# or restart Docker daemon
+sudo systemctl restart docker
 ```
 
 ---

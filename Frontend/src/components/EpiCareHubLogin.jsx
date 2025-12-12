@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 
 const Signin = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [authError, setAuthError] = useState('');
@@ -11,12 +12,13 @@ const Signin = () => {
   const navigate = useNavigate();
 
   // Validation functions
-  const validateUsername = (value) => {
+  const validateEmail = (value) => {
     if (!value.trim()) {
-      return 'Username or email is required';
+      return 'Email is required';
     }
-    if (value.trim().length < 3) {
-      return 'Username must be at least 3 characters';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return 'Please enter a valid email address';
     }
     return '';
   };
@@ -33,17 +35,17 @@ const Signin = () => {
 
   const validateForm = () => {
     const errors = {};
-    const usernameError = validateUsername(username);
+    const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
 
-    if (usernameError) errors.username = usernameError;
+    if (emailError) errors.email = emailError;
     if (passwordError) errors.password = passwordError;
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
 
@@ -53,25 +55,41 @@ const Signin = () => {
 
     setIsSubmitting(true);
 
-    // Simulate auth delay
-    setTimeout(() => {
-      try {
-        // Login successful
+    try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      const response = await axios.post(`${apiUrl}/login`, {
+        email: email,
+        password: password
+      });
+
+      if (response.data.isSuccess) {
+        // Store user info in localStorage
         localStorage.setItem('isLoggedIn', 'true');
+        if (response.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
         navigate('/dashboard');
-      } catch (error) {
-        setAuthError('An error occurred during login. Please try again.');
-        setIsSubmitting(false);
+      } else {
+        setAuthError('Login failed. Please try again.');
       }
-    }, 500);
+    } catch (error) {
+      console.error('Login error:', error);
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Invalid email or password';
+      setAuthError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFieldBlur = (field) => {
-    if (field === 'username' && username) {
-      const error = validateUsername(username);
+    if (field === 'email' && email) {
+      const error = validateEmail(email);
       setFieldErrors(prev => ({
         ...prev,
-        username: error
+        email: error
       }));
     } else if (field === 'password' && password) {
       const error = validatePassword(password);
@@ -120,39 +138,39 @@ const Signin = () => {
               <motion.div variants={itemVariants} className="space-y-6">
                 <div className="rounded-2xl border border-emerald-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm">
                   <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Username Field */}
+                    {/* Email Field */}
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.5, delay: 0.3 }}
                     >
                       <label
-                        htmlFor="username"
+                        htmlFor="email"
                         className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                       >
-                        Username or Email
+                        Email
                       </label>
                       <input
-                        id="username"
-                        type="text"
-                        name="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        onBlur={() => handleFieldBlur('username')}
-                        placeholder="Enter your username or email"
+                        id="email"
+                        type="email"
+                        name="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onBlur={() => handleFieldBlur('email')}
+                        placeholder="Enter your email"
                         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 ${
-                          fieldErrors.username
+                          fieldErrors.email
                             ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 focus:ring-red-500'
                             : 'border-emerald-100 dark:border-slate-700 bg-emerald-50/40 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:ring-emerald-500 text-slate-900 dark:text-slate-100'
                         }`}
                       />
-                      {fieldErrors.username && (
+                      {fieldErrors.email && (
                         <motion.p
                           initial={{ opacity: 0, y: -5 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="mt-1.5 text-sm text-red-600"
                         >
-                          {fieldErrors.username}
+                          {fieldErrors.email}
                         </motion.p>
                       )}
                     </motion.div>

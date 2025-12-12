@@ -24,6 +24,20 @@ const exportedMethods = {
       throw new Error("Invalid user type. Must be 'user' or 'admin'");
     }
 
+    const usersCollection = await users();
+
+    // Check if email already exists
+    const existingEmail = await usersCollection.findOne({ email: email });
+    if (existingEmail) {
+      throw new Error("Email already registered");
+    }
+
+    // Check if username already exists
+    const existingUsername = await usersCollection.findOne({ username: username });
+    if (existingUsername) {
+      throw new Error("Username already taken");
+    }
+
     let hashedPassword = await bcrypt.hash(password, saltRounds);
     let newUser = {
       firstName: firstName,
@@ -34,7 +48,6 @@ const exportedMethods = {
       userType: userType || "user", // Default to "user" if not specified
     };
 
-    const usersCollection = await users();
     const newInsertInformation = await usersCollection.insertOne(newUser);
 
     if (!newInsertInformation.insertedId) {
@@ -56,6 +69,23 @@ const exportedMethods = {
     let passwordCheck = await bcrypt.compare(password, user.password);
     if (!passwordCheck)
       throw new Error("Either username or password is invalid");
+
+    const { password: hashedPassword, ...rest } = user;
+    return rest;
+  },
+
+  async loginUserByEmail(email, password) {
+    email = validateEmail(email);
+    password = checkPassword(password);
+    const UsersCollection = await users();
+    const user = await UsersCollection.findOne({
+      email: email,
+    });
+    if (!user) throw new Error("Invalid email or password");
+
+    let passwordCheck = await bcrypt.compare(password, user.password);
+    if (!passwordCheck)
+      throw new Error("Invalid email or password");
 
     const { password: hashedPassword, ...rest } = user;
     return rest;

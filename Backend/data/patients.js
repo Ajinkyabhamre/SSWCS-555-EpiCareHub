@@ -209,24 +209,35 @@ const exportedMethods = {
     });
 
     patientsList.forEach((patient) => {
-      if (patient.age >= 0 && patient.age <= 18) {
-        res.ageGroups["0 - 18"]++;
-      } else if (patient.age >= 19 && patient.age <= 35) {
-        res.ageGroups["19 - 35"]++;
-      } else if (patient.age >= 36 && patient.age <= 50) {
-        res.ageGroups["36 - 50"]++;
-      } else if (patient.age >= 51 && patient.age <= 65) {
-        res.ageGroups["51 - 65"]++;
-      } else {
-        res.ageGroups["66+"]++;
+      // Age grouping
+      if (patient.age !== undefined && patient.age !== null) {
+        if (patient.age >= 0 && patient.age <= 18) {
+          res.ageGroups["0 - 18"]++;
+        } else if (patient.age >= 19 && patient.age <= 35) {
+          res.ageGroups["19 - 35"]++;
+        } else if (patient.age >= 36 && patient.age <= 50) {
+          res.ageGroups["36 - 50"]++;
+        } else if (patient.age >= 51 && patient.age <= 65) {
+          res.ageGroups["51 - 65"]++;
+        } else {
+          res.ageGroups["66+"]++;
+        }
       }
 
-      let creationDate = moment(patient.creationDate).format("MM/DD/YYYY");
+      // Creation date grouping
+      if (patient.creationDate) {
+        let creationDate = moment(patient.creationDate).format("MM/DD/YYYY");
 
-      if (creationDate in createdDateData) {
-        createdDateData[creationDate]++;
-      } else {
-        createdDateData[creationDate] = 1;
+        // Validate that moment parsing succeeded
+        if (creationDate !== "Invalid date") {
+          if (creationDate in createdDateData) {
+            createdDateData[creationDate]++;
+          } else {
+            createdDateData[creationDate] = 1;
+          }
+        } else {
+          console.warn("[Statistics] Invalid creation date for patient:", patient._id);
+        }
       }
     });
 
@@ -241,6 +252,12 @@ const exportedMethods = {
     res.ageGroupsData = Object.entries(res.ageGroups).map(
       ([ageGroup, number]) => ({ ageGroup, number })
     );
+
+    // Debug logging
+    console.log("[Statistics] Total patients:", res.totalPatients);
+    console.log("[Statistics] Age groups data:", res.ageGroupsData);
+    console.log("[Statistics] Created date data entries:", res.createdDateWiseData.length);
+    console.log("[Statistics] Upload scans data entries:", res.uploadScansDateWiseData.length);
 
     return res;
   },

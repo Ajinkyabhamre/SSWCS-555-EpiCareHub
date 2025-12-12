@@ -1,7 +1,20 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import BarChart from "./charts/BarChart";
-import PieChart from "./charts/PieChart";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 export const KPICard = ({ label, value }) => {
   return (
@@ -36,10 +49,12 @@ const Dashboard = () => {
       .request(config)
       .then((response) => {
         const tempData = response.data;
+
         // Ensure arrays exist and have defaults
         tempData.ageGroupsData = tempData.ageGroupsData || [];
         tempData.uploadScansDateWiseData = tempData.uploadScansDateWiseData || [];
         tempData.createdDateWiseData = tempData.createdDateWiseData || [];
+
         setData(tempData);
       })
       .catch((error) => {
@@ -132,6 +147,97 @@ const Dashboard = () => {
     );
   }
 
+  // Prepare chart data
+  // Age groups data - map from backend format
+  const ageData = (data.ageGroupsData || []).map(item => ({
+    label: item.ageGroup,
+    count: item.number || 0
+  }));
+
+  // Scan volume data - format dates
+  const scanVolumeData = (data.uploadScansDateWiseData || []).map(item => {
+    try {
+      const dateObj = new Date(item.date);
+      const formattedDate = dateObj.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      return {
+        date: formattedDate !== "Invalid Date" ? formattedDate : item.date,
+        count: item.value || 0,
+      };
+    } catch {
+      return {
+        date: item.date || "",
+        count: item.value || 0,
+      };
+    }
+  });
+
+  // New patients data - format dates
+  const newPatientsData = (data.createdDateWiseData || []).map(item => {
+    try {
+      const dateObj = new Date(item.date);
+      const formattedDate = dateObj.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      return {
+        date: formattedDate !== "Invalid Date" ? formattedDate : item.date,
+        count: item.value || 0,
+      };
+    } catch {
+      return {
+        date: item.date || "",
+        count: item.value || 0,
+      };
+    }
+  });
+
+  // Pie chart data for epilepsy diagnosis
+  const epilepsyPieData = [
+    { name: "Epilepsy", value: data.epilepsyPatient || 0 },
+    { name: "Non-epilepsy", value: data.nonEpilepsyCount || 0 },
+  ];
+
+  const PIE_COLORS = {
+    light: ["#10b981", "#e5e7eb"],
+    dark: ["#10b981", "#475569"]
+  };
+
+  // Custom tooltip with proper dark/light mode support
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-lg backdrop-blur-sm">
+          <p className="text-slate-900 dark:text-slate-100 font-semibold text-sm mb-1.5">
+            {label}
+          </p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>{entry.name}:</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">{entry.value}</span>
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Empty state component
+  const EmptyChartState = ({ message }) => (
+    <div className="flex h-60 items-center justify-center">
+      <div className="text-center">
+        <div className="text-5xl mb-3">📊</div>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {message || "No data yet. Add patients to see this chart."}
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 dark:from-slate-900 via-white dark:via-slate-950 to-white dark:to-slate-950">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-10 pb-8 sm:pb-12 md:pb-16">
@@ -157,31 +263,95 @@ const Dashboard = () => {
         <div className="grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2 mb-4 sm:mb-6">
           {/* Age Distribution Chart */}
           <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
-              <BarChart
-                data={data.ageGroupsData || []}
-                xKey="ageGroup"
-                yKey="number"
-                title="Patient age distribution"
-                description="How patients are distributed across age groups."
-                height={320}
-              />
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Patient age distribution
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                How patients are distributed across age groups.
+              </p>
             </div>
+            {ageData.length === 0 ? (
+              <EmptyChartState message="No patient age data yet." />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={ageData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(148, 163, 184, 0.15)"
+                    className="dark:opacity-40"
+                  />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.3)' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.3)' }}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }} />
+                  <Bar
+                    dataKey="count"
+                    fill="#10b981"
+                    radius={[8, 8, 0, 0]}
+                    name="Patients"
+                    className="transition-opacity hover:opacity-80"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Epilepsy Status Pie Chart */}
           <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
-              <PieChart
-                data={[
-                  { x: "Epilepsy", y: data.epilepsyPatient || 0 },
-                  { x: "Non-epilepsy", y: data.nonEpilepsyCount || 0 },
-                ]}
-                title="Epilepsy diagnosis"
-                description="Patient distribution by diagnosis status."
-                height={320}
-              />
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Epilepsy diagnosis
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Patient distribution by diagnosis status.
+              </p>
             </div>
+            {(data.epilepsyPatient || 0) + (data.nonEpilepsyCount || 0) === 0 ? (
+              <EmptyChartState message="No diagnosis data yet." />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <Pie
+                    data={epilepsyPieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={90}
+                    innerRadius={40}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {epilepsyPieData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={index === 0 ? '#10b981' : '#64748b'}
+                        className="transition-opacity hover:opacity-80 cursor-pointer"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend
+                    wrapperStyle={{
+                      paddingTop: '20px',
+                      fontSize: '13px'
+                    }}
+                    iconType="circle"
+                    formatter={(value) => <span className="text-slate-700 dark:text-slate-300">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -189,64 +359,101 @@ const Dashboard = () => {
         <div className="grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2">
           {/* Scan Volume Over Time */}
           <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
-              <BarChart
-                data={(data.uploadScansDateWiseData || []).map((d) => {
-                  try {
-                    const dateObj = new Date(d.date);
-                    const formattedDate = dateObj.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                    return {
-                      date: formattedDate !== "Invalid Date" ? formattedDate : d.date,
-                      value: d.value || 0,
-                    };
-                  } catch {
-                    return {
-                      date: d.date || "",
-                      value: d.value || 0,
-                    };
-                  }
-                })}
-                xKey="date"
-                yKey="value"
-                title="Scan volume over time"
-                description="EEG scans performed by date."
-                height={320}
-              />
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Scan volume over time
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                EEG scans performed by date.
+              </p>
             </div>
+            {scanVolumeData.length === 0 ? (
+              <EmptyChartState message="No scan data yet." />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={scanVolumeData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(148, 163, 184, 0.15)"
+                    className="dark:opacity-40"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.3)' }}
+                    tickLine={false}
+                    angle={-15}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.3)' }}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }} />
+                  <Bar
+                    dataKey="count"
+                    fill="#10b981"
+                    radius={[8, 8, 0, 0]}
+                    name="Scans"
+                    className="transition-opacity hover:opacity-80"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* New Patients Over Time */}
           <div className="rounded-2xl sm:rounded-3xl border border-emerald-50 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-[0_18px_60px_rgba(15,118,110,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
-            <div className="h-80 sm:h-72 md:h-80 lg:h-96">
-              <BarChart
-                data={(data.createdDateWiseData || []).map((d) => {
-                  try {
-                    const dateObj = new Date(d.date);
-                    const formattedDate = dateObj.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                    return {
-                      date: formattedDate !== "Invalid Date" ? formattedDate : d.date,
-                      value: d.value || 0,
-                    };
-                  } catch {
-                    return {
-                      date: d.date || "",
-                      value: d.value || 0,
-                    };
-                  }
-                })}
-                xKey="date"
-                yKey="value"
-                title="New patients over time"
-                description="Patient enrollment by date."
-                height={320}
-              />
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                New patients over time
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Patient enrollment by date.
+              </p>
             </div>
+            {newPatientsData.length === 0 ? (
+              <EmptyChartState message="No enrollment data yet." />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={newPatientsData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(148, 163, 184, 0.15)"
+                    className="dark:opacity-40"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.3)' }}
+                    tickLine={false}
+                    angle={-15}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.3)' }}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    dot={{ fill: '#10b981', strokeWidth: 2, r: 5, stroke: '#fff' }}
+                    activeDot={{ r: 7, fill: '#059669', stroke: '#fff', strokeWidth: 2 }}
+                    name="New Patients"
+                    className="transition-opacity"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

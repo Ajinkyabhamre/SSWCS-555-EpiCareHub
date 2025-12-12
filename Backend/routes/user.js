@@ -72,27 +72,36 @@ router
   });
 
 router.route("/login").post(async (req, res) => {
-  let userData = req.body;
+  let loginData = req.body;
   if (!req.body) return res.status(400).json({ error: "No data passed" });
   try {
-    userData.username = checkIsProperUsername(userData.username);
-    userData.password = checkPassword(userData.password);
+    loginData.email = validateEmail(loginData.email);
+    loginData.password = checkPassword(loginData.password);
   } catch (error) {
     return res.status(400).json({ isSuccess: false, error: error.message });
   }
 
   try {
-    const loginUser = await userData.loginUser(
-      userData.username,
-      userData.password
+    const loginUser = await userData.loginUserByEmail(
+      loginData.email,
+      loginData.password
     );
 
     req.session.user = loginUser;
     return res
       .status(200)
-      .json({ isSuccess: true, message: "logged in successfully" });
+      .json({
+        isSuccess: true,
+        message: "logged in successfully",
+        user: {
+          id: loginUser._id,
+          name: `${loginUser.firstName} ${loginUser.lastName}`,
+          email: loginUser.email,
+          userType: loginUser.userType
+        }
+      });
   } catch (error) {
-    return res.status(404).json({ isSuccess: false, error: error.message });
+    return res.status(401).json({ isSuccess: false, error: error.message });
   }
 });
 

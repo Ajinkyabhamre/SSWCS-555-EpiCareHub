@@ -2,7 +2,6 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import BrainWebGLViewer from "./BrainWebGLViewer";
-import AnalysisRunner from "./Brain/AnalysisRunner";
 
 /**
  * BrainStudyViewer Component
@@ -246,20 +245,6 @@ const BrainStudyViewer = ({ patient, study, onAnalysisComplete }) => {
             ))}
           </div>
         </div>
-
-        {/* Analysis Runner - Run demo pipeline from frontend */}
-        {patient && onAnalysisComplete && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-          >
-            <AnalysisRunner
-              patientId={patient._id}
-              onAnalysisComplete={onAnalysisComplete}
-            />
-          </motion.div>
-        )}
 
         {/* Metadata Card */}
         <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-[0_18px_45px_rgba(15,118,110,0.08)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.5)] border border-transparent dark:border-slate-800 p-4 sm:p-6">

@@ -4,7 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BrainWebGLViewer from "./BrainWebGLViewer";
-import AnalysisRunner from "./Brain/AnalysisRunner";
 
 const Brain = () => {
   const { patientId, uploadId } = useParams();
@@ -385,20 +384,6 @@ const Brain = () => {
               ))}
             </div>
           </div>
-
-          {/* Analysis Runner - Run demo pipeline from frontend */}
-          {patientId && !isDemoMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-            >
-              <AnalysisRunner
-                patientId={patientId}
-                onAnalysisComplete={handleAnalysisComplete}
-              />
-            </motion.div>
-          )}
 
           {/* Metadata Card */}
           {!isDemoMode && (

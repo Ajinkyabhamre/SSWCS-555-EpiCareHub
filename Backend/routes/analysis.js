@@ -1,9 +1,9 @@
 import { Router } from "express";
 const router = Router();
-import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import axios from "axios";
 
 // Get current directory (ESM equivalent of __dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -126,8 +126,6 @@ router.post("/run-human-mtl", async (req, res) => {
     const algorithmDir = path.resolve(__dirname, "..", "..", "Localization-Algorithm");
     const datasetFilePath = path.join(algorithmDir, datasetConfig.filePath);
 
-    console.log(`[/api/analysis/run-human-mtl] Checking dataset file: ${datasetFilePath}`);
-
     // Check if file exists
     if (!fs.existsSync(datasetFilePath)) {
       return res.status(404).json({
@@ -146,7 +144,6 @@ router.post("/run-human-mtl", async (req, res) => {
     // Ensure uploads directory exists
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
-      console.log(`[/api/analysis/run-human-mtl] Created uploads directory: ${uploadsDir}`);
     }
 
     const pythonArgs = [
@@ -158,66 +155,54 @@ router.post("/run-human-mtl", async (req, res) => {
       "--historic", "false"
     ];
 
-    console.log("[/api/analysis/run-human-mtl] Starting Python pipeline...");
-    console.log("  - Working directory:", algorithmDir);
-    console.log("  - Command: python3", pythonArgs.join(" "));
-    console.log("  - Patient ID:", patientId);
-    console.log("  - Upload ID:", uploadId);
-    console.log("  - Session Key:", sessionKey);
-    console.log("  - Dataset File:", datasetFilePath);
+    console.log(`[ANALYSIS] Starting HUMAN_MTL pipeline for uploadId: ${uploadId}`);
 
     // ====================================================================
-    // Spawn Python process
+    // Call FastAPI endpoint instead of spawning Python directly
     // ====================================================================
-    const pythonProcess = spawn("python3", pythonArgs, {
-      cwd: algorithmDir,
-      stdio: ["ignore", "pipe", "pipe"], // Capture stdout and stderr
-      detached: false // Keep attached to this process
-    });
+    const fastApiUrl = process.env.FASTAPI_URL || "http://localhost:8000";
+    const endpoint = `${fastApiUrl}/api/human-mtl-demo`;
 
-    // Log stdout
-    pythonProcess.stdout.on("data", (data) => {
-      const output = data.toString().trim();
-      console.log(`[Python STDOUT] ${output}`);
-    });
+    // Create form data for FastAPI endpoint
+    const FormData = (await import('form-data')).default;
+    const formData = new FormData();
+    formData.append('patientId', patientId);
+    formData.append('uploadId', uploadId);
+    formData.append('datasetFilePath', datasetFilePath);
 
-    // Log stderr
-    pythonProcess.stderr.on("data", (data) => {
-      const output = data.toString().trim();
-      console.error(`[Python STDERR] ${output}`);
-    });
+    try {
+      // Make async call to FastAPI but don't wait for response
+      // This allows the pipeline to run in background
+      axios.post(endpoint, formData, {
+        headers: formData.getHeaders(),
+        timeout: 600000 // 10 minute timeout
+      })
+      .then(() => {
+        console.log(`[ANALYSIS] HUMAN_MTL pipeline completed for uploadId: ${uploadId}`);
+      })
+      .catch((error) => {
+        console.error(`[ANALYSIS ERROR] Pipeline failed:`, error.message);
+      });
 
-    // Handle process exit
-    pythonProcess.on("exit", (code, signal) => {
-      if (code === 0) {
-        console.log(`[/api/analysis/run-human-mtl] ✓ Python pipeline completed successfully`);
-      } else {
-        console.error(`[/api/analysis/run-human-mtl] ✗ Python pipeline failed with code ${code}, signal ${signal}`);
-      }
-    });
+      // Return immediate response to frontend
+      // Pipeline will run in background and POST results to /patients/upload when done
+      res.json({
+        success: true,
+        message: "HUMAN_MTL pipeline started successfully via FastAPI",
+        patientId,
+        uploadId,
+        sessionKey,
+        datasetFile: datasetConfig.filePath,
+        note: "Pipeline is running in background. Poll /patients/:patientId/studies to check for completion."
+      });
 
-    // Handle process errors
-    pythonProcess.on("error", (error) => {
-      console.error(`[/api/analysis/run-human-mtl] ✗ Python process error:`, error);
-    });
-
-    // ====================================================================
-    // Return immediate response
-    // ====================================================================
-    // Don't wait for Python to complete - return success immediately
-    // Python will POST to /patients/upload when done
-    res.json({
-      success: true,
-      message: "HUMAN_MTL pipeline started successfully",
-      patientId,
-      uploadId,
-      sessionKey,
-      datasetFile: datasetConfig.filePath,
-      note: "Pipeline is running in background. Poll /patients/:patientId/studies to check for completion."
-    });
+    } catch (error) {
+      console.error(`[ANALYSIS ERROR] Failed to initiate pipeline:`, error.message);
+      throw error;
+    }
 
   } catch (error) {
-    console.error("[/api/analysis/run-human-mtl] Error:", error);
+    console.error("[ANALYSIS ERROR]", error.message);
     res.status(500).json({
       success: false,
       error: error.message,

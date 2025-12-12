@@ -117,7 +117,6 @@ function BrainMesh({ opacity, onBrainLoaded, brainGroupRef }) {
   const rh = useLoader(OBJLoader, "/models/brain_rh.obj");
 
   const brainGroup = useMemo(() => {
-    console.log("[3D] Brain mesh loaded");
 
     const group = new THREE.Group();
 
@@ -175,10 +174,9 @@ function BrainMesh({ opacity, onBrainLoaded, brainGroupRef }) {
       const center = box.getCenter(new THREE.Vector3());
       const radius = size.length() / 2;
 
-      console.log("[3D] Brain bounding box computed:");
-      console.log("  - Center:", center.toArray().map(v => v.toFixed(3)).join(", "));
-      console.log("  - Size:", size.toArray().map(v => v.toFixed(3)).join(", "));
-      console.log("  - Radius:", radius.toFixed(3));
+      if (import.meta.env.DEV) {
+        console.log("[3D] Brain mesh ready - radius:", radius.toFixed(2));
+      }
 
       onBrainLoaded({ box, size, center, radius });
     }
@@ -341,18 +339,20 @@ ElectrodePoints.propTypes = {
 };
 
 /**
- * Camera Controller - Handles auto-fit and reset
+ * Camera Controller - Handles auto-fit and reset with optimized distance
  */
 function CameraController({ controlsRef, brainBounds, autoFitTrigger }) {
   const { camera } = useThree();
 
   useEffect(() => {
-    if (!brainBounds || !controlsRef.current) return;
+    if (!brainBounds || !controlsRef.current) {
+      return;
+    }
 
     const { center, radius } = brainBounds;
 
-    // Position camera at comfortable distance
-    const distance = radius * 2.2;
+    // Optimized distance for better initial view (closer than before)
+    const distance = radius * 1.8;
     camera.position.set(center.x, center.y, center.z + distance);
     camera.lookAt(center);
 
@@ -360,7 +360,10 @@ function CameraController({ controlsRef, brainBounds, autoFitTrigger }) {
     controlsRef.current.target.copy(center);
     controlsRef.current.update();
 
-    console.log("[3D] Camera auto-fit - distance:", distance.toFixed(3));
+    // Only log on initial mount or explicit reset
+    if ((autoFitTrigger === 0 || autoFitTrigger > 0) && import.meta.env.DEV) {
+      console.log("[3D] Camera fitted - distance:", distance.toFixed(2));
+    }
   }, [brainBounds, camera, controlsRef, autoFitTrigger]);
 
   return null;
@@ -400,6 +403,20 @@ DebugHelpers.propTypes = {
 };
 
 // ============================================================================
+// DEFAULT VIEWER STATE - Single source of truth for reset behavior
+// ============================================================================
+
+const DEFAULT_VIEWER_STATE = {
+  brainOpacity: 0.85,
+  showElectrodes: true,
+  showShafts: true,
+  hotspotsOnly: false,
+  debugMode: false,
+  selectedElectrode: null,
+  // Camera will be set dynamically based on brain bounds
+};
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -415,21 +432,25 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
   const [electrodeBounds, setElectrodeBounds] = useState(null);
   const brainGroupRef = useRef();
 
-  // UI state
-  const [brainOpacity, setBrainOpacity] = useState(1.0);
-  const [showElectrodes, setShowElectrodes] = useState(true);
-  const [showShafts, setShowShafts] = useState(true);
-  const [hotspotsOnly, setHotspotsOnly] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
-  const [hoveredElectrode, setHoveredElectrode] = useState(null);
-  const [selectedElectrode, setSelectedElectrode] = useState(null);
+  // UI state - initialized from DEFAULT_VIEWER_STATE
+  const [brainOpacity, setBrainOpacity] = useState(DEFAULT_VIEWER_STATE.brainOpacity);
+  const [showElectrodes, setShowElectrodes] = useState(DEFAULT_VIEWER_STATE.showElectrodes);
+  const [showShafts, setShowShafts] = useState(DEFAULT_VIEWER_STATE.showShafts);
+  const [hotspotsOnly, setHotspotsOnly] = useState(DEFAULT_VIEWER_STATE.hotspotsOnly);
+  const [debugMode, setDebugMode] = useState(DEFAULT_VIEWER_STATE.debugMode);
+  const [hoveredElectrode, setHoveredElectrode] = useState(DEFAULT_VIEWER_STATE.selectedElectrode);
+  const [selectedElectrode, setSelectedElectrode] = useState(DEFAULT_VIEWER_STATE.selectedElectrode);
   const [autoFitTrigger, setAutoFitTrigger] = useState(0);
 
   // Refs
   const controlsRef = useRef();
 
-  console.log("[BrainWebGLViewer] uploadId:", uploadId);
-  console.log("[BrainWebGLViewer] study.webglOverlayUrl:", study?.webglOverlayUrl);
+  // Mount log only
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log("[3D] Brain viewer mounted - uploadId:", uploadId);
+    }
+  }, [uploadId]);
 
   // Callback when brain mesh is loaded
   const handleBrainLoaded = useCallback((bounds) => {
@@ -447,8 +468,22 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
     setSelectedElectrode(electrode);
   }, []);
 
-  // Handle reset button
+  // Handle complete reset - camera AND all UI controls
   const handleResetCamera = useCallback(() => {
+    if (import.meta.env.DEV) {
+      console.log("[3D] Resetting viewer to default state");
+    }
+
+    // Reset all UI controls to default state
+    setBrainOpacity(DEFAULT_VIEWER_STATE.brainOpacity);
+    setShowElectrodes(DEFAULT_VIEWER_STATE.showElectrodes);
+    setShowShafts(DEFAULT_VIEWER_STATE.showShafts);
+    setHotspotsOnly(DEFAULT_VIEWER_STATE.hotspotsOnly);
+    setDebugMode(DEFAULT_VIEWER_STATE.debugMode);
+    setSelectedElectrode(DEFAULT_VIEWER_STATE.selectedElectrode);
+    setHoveredElectrode(null);
+
+    // Trigger camera reset
     setAutoFitTrigger((prev) => prev + 1);
   }, []);
 
@@ -463,7 +498,6 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
       }
 
       try {
-        console.log("[3D] Fetching overlay from:", overlayUrl);
         const response = await fetch(overlayUrl);
 
         if (!response.ok) {
@@ -471,7 +505,10 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
         }
 
         const data = await response.json();
-        console.log("[3D] Overlay loaded:", data);
+
+        if (import.meta.env.DEV) {
+          console.log("[3D] Overlay loaded:", data.electrodes?.length || 0, "electrodes");
+        }
 
         // Parse electrodes with new schema
         const electrodes = data.electrodes || [];
@@ -530,23 +567,17 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
             elecBox.expandByPoint(new THREE.Vector3(...pt.position));
           });
           setElectrodeBounds(elecBox);
-
-          console.log("[3D] Electrode bounds:");
-          const min = elecBox.min.toArray().map(v => v.toFixed(3)).join(", ");
-          const max = elecBox.max.toArray().map(v => v.toFixed(3)).join(", ");
-          console.log("  - Min:", min);
-          console.log("  - Max:", max);
         }
 
-        console.log(
-          `[3D] Loaded ${points.length} electrodes, ${
-            points.filter((p) => p.isHotspot).length
-          } hotspots, ${shaftConnectionsArray.length} shafts`
-        );
+        const hotspotCount = points.filter((p) => p.isHotspot).length;
+
+        if (import.meta.env.DEV) {
+          console.log(`[3D] Loaded ${points.length} electrodes (${hotspotCount} hotspots, ${shaftConnectionsArray.length} shafts)`);
+        }
 
         setLoading(false);
       } catch (err) {
-        console.error("[3D] Error fetching overlay:", err);
+        console.error("3D Viewer error:", err.message);
         setError(err.message);
         setLoading(false);
       }
@@ -663,7 +694,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
 
           {/* Show Shafts */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Shafts</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Shaft Lines</label>
             <button
               onClick={() => setShowShafts(!showShafts)}
               className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
@@ -672,6 +703,7 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
                   : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
               }`}
               disabled={!showElectrodes}
+              title={showShafts ? "Hide depth electrode shaft connections" : "Show depth electrode shaft connections"}
             >
               {showShafts ? "Visible" : "Hidden"}
             </button>
@@ -799,19 +831,20 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
             )}
           </Suspense>
 
-          {/* Camera Controls */}
+          {/* Camera Controls - Optimized for smooth interaction */}
           <OrbitControls
             ref={controlsRef}
-            enablePan
-            enableZoom
-            enableRotate
-            enableDamping
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            enableDamping={true}
             dampingFactor={0.08}
-            rotateSpeed={0.7}
-            zoomSpeed={0.8}
-            panSpeed={0.8}
+            rotateSpeed={0.6}
+            zoomSpeed={0.7}
+            panSpeed={0.6}
             minDistance={minDistance}
             maxDistance={maxDistance}
+            makeDefault
           />
 
           {/* Camera Controller */}

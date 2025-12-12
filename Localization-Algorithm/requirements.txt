@@ -1,0 +1,19 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-dotenv==1.0.0
+python-multipart==0.0.6
+requests==2.31.0
+
+# Scientific computing
+numpy==1.24.3
+scipy==1.10.1
+matplotlib==3.7.1
+
+# MNE for EEG processing
+mne==1.6.1
+nibabel==5.2.0
+nilearn==0.10.3
+
+# Additional dependencies for brain visualization
+h5py==3.10.0
+Pillow==10.2.0

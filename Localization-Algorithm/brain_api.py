@@ -1,5 +1,6 @@
 # Load environment variables FIRST, before any other imports
 import os
+import platform
 from dotenv import load_dotenv
 
 # Load .env file from current directory
@@ -56,7 +57,8 @@ elif os_name == 'Windows':
     base_Path = config['windows_path']
     print(f"[{LOG_LEVEL}] Windows Detected: {base_Path}")
 else:
-    raise Exception("Unsupported operating system.")
+    # raise Exception("Unsupported operating system.")
+    print(f"[brain-api] Running on: {platform.system()} {platform.machine()} (continuing)")
 
 print(f"[{LOG_LEVEL}] FastAPI service initialized")
 print(f"[{LOG_LEVEL}] Allowed origins: {origins}")

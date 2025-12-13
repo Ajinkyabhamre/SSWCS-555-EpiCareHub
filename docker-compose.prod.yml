@@ -1,0 +1,41 @@
+services:
+  backend:
+    image: ghcr.io/ajinkyabhamre/epicarehub-backend:latest
+    container_name: epicarehub-backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - brain-api
+    networks:
+      - epicarehub-network
+
+  brain-api:
+    image: ghcr.io/ajinkyabhamre/epicarehub-brain-api:latest
+    container_name: epicarehub-brain-api
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - brain-uploads:/app/uploads
+    networks:
+      - epicarehub-network
+
+  frontend:
+    image: ghcr.io/ajinkyabhamre/epicarehub-frontend:latest
+    container_name: epicarehub-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - epicarehub-network
+
+networks:
+  epicarehub-network:
+    driver: bridge
+
+volumes:
+  brain-uploads:
+    driver: local

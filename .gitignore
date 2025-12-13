@@ -16,11 +16,25 @@ Localization-Algorithm/.env.local
 
 # Build outputs
 Frontend/dist/
+Frontend/build/
 Backend/dist/
+Backend/build/
+dist/
+build/
+*.tsbuildinfo
 
 # Testing
 coverage/
 *.lcov
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log.*
 
 # IDE
 .vscode/
@@ -28,24 +42,78 @@ coverage/
 *.swp
 *.swo
 *~
+*.sublime-*
 
 # OS
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 venv/
 .venv/
 *.egg-info/
+.Python
+pip-log.txt
+.tox/
+.coverage
+htmlcov/
 
-# Ignore all markdown docs except README
-*.md
-!README.md
+# Docker artifacts
+docker-compose.override.yml
+.dockerignore
+
+# Temporary files and uploads (runtime generated)
+uploads/
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Large datasets (use external storage or gitignored datasets folder)
+datasets/*.h5
+datasets/*.fif
+datasets/*.mat
+datasets/*.nii
+datasets/*.nii.gz
+Localization-Algorithm/uploads/
+Localization-Algorithm/datasets/*.h5
+Localization-Algorithm/datasets/*.fif
+Localization-Algorithm/datasets/*.mat
+
+# Model weights and checkpoints (use model registry or external storage)
+model/**/*.pkl
+model/**/*.pth
+model/**/*.h5
+model/**/*.weights
+*.ckpt
+checkpoints/
+
+# Private keys and secrets (CRITICAL - never commit)
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+*.der
+*.csr
+id_rsa
+id_dsa
+*.pub
+
+# Documentation (organized structure - keep essential docs, ignore internal notes)
+# Keep tracked: README.md, docs/ folder
+# Ignore: nothing by default (let developers decide what to commit)
+# If you want to ignore session summaries: docs/internal/*_SUMMARY.md
 
 
 

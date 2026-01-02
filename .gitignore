@@ -111,9 +111,11 @@ id_dsa
 *.pub
 
 # Documentation (organized structure - keep essential docs, ignore internal notes)
-# Keep tracked: README.md, docs/ folder
+# Keep tracked: README.md, CLAUDE.md, docs/ folder
 # Ignore: nothing by default (let developers decide what to commit)
 # If you want to ignore session summaries: docs/internal/*_SUMMARY.md
 
+# Deployment planning (working documents - decide per team preference)
+DEPLOYMENT_PLAN.md
 
 

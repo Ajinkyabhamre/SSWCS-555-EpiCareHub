@@ -1,15 +1,17 @@
 # Environment variables (never commit real secrets)
+# Allow: *.env.example files only
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 Frontend/.env
-Frontend/.env.local
-Frontend/.env.*.local
+Frontend/.env.*
+!Frontend/.env.example
 Backend/.env
-Backend/.env.local
-Backend/.env.*.local
+Backend/.env.*
+!Backend/.env.example
 Localization-Algorithm/.env
-Localization-Algorithm/.env.local
+Localization-Algorithm/.env.*
+!Localization-Algorithm/.env.example
 
 # Dependencies
 **/node_modules/

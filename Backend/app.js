@@ -38,10 +38,31 @@ app.use(
   })
 );
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(fileUpload());
-app.use(bodyParser.json());
-app.use(cors({ origin: "*" }));
+// CORS Configuration - Environment-based origin whitelist
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:5173'];
+
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true
+}));
+
+// Body parser with size limits to prevent abuse
+app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }));
+app.use(bodyParser.json({ limit: '2mb' }));
+
+// File upload with configurable size limits (default 100MB for Render/Railway compatibility)
+const uploadMaxMB = parseInt(process.env.UPLOAD_MAX_MB || '100', 10);
+app.use(fileUpload({
+  limits: { fileSize: uploadMaxMB * 1024 * 1024 },
+  abortOnLimit: true,
+  limitHandler: (req, res) => {
+    res.status(413).json({
+      error: `File too large. Maximum size is ${uploadMaxMB}MB. Consider uploading to object storage directly.`
+    });
+  }
+}));
 
 // Serve static files (brain meshes, etc.)
 app.use(express.static("public"));

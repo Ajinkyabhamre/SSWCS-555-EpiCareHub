@@ -3,12 +3,14 @@ const router = Router();
 import { eegStudiesData } from "../data/index.js";
 import { validateId } from "../data/helper.js";
 import crypto from "crypto";
+import { requireAuth } from "../middleware/requireAuth.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
 
 /**
  * GET /patients/:patientId/studies
  * Get all EEG studies for a specific patient
  */
-router.get("/patients/:patientId/studies", async (req, res) => {
+router.get("/patients/:patientId/studies", requireAuth, async (req, res) => {
   try {
     // Validate patientId
     const patientId = validateId(req.params.patientId, "patient id");
@@ -34,7 +36,7 @@ router.get("/patients/:patientId/studies", async (req, res) => {
  * GET /studies/:studyId
  * Get a single EEG study by its ID
  */
-router.get("/studies/:studyId", async (req, res) => {
+router.get("/studies/:studyId", requireAuth, async (req, res) => {
   try {
     // Validate studyId
     const studyId = validateId(req.params.studyId, "study id");
@@ -63,7 +65,7 @@ router.get("/studies/:studyId", async (req, res) => {
 
 /**
  * POST /patients/:patientId/studies
- * Create a new EEG study for a patient
+ * Create a new EEG study for a patient (ADMIN ONLY)
  *
  * PHASE 3: This endpoint is used to initiate a study BEFORE uploading to Python.
  * The workflow is:
@@ -74,7 +76,7 @@ router.get("/studies/:studyId", async (req, res) => {
  *
  * If uploadId is not provided, one will be generated automatically.
  */
-router.post("/patients/:patientId/studies", async (req, res) => {
+router.post("/patients/:patientId/studies", requireAdmin, async (req, res) => {
   try {
     // Validate patientId
     const patientId = validateId(req.params.patientId, "patient id");
@@ -143,7 +145,7 @@ router.post("/patients/:patientId/studies", async (req, res) => {
  * PATCH /studies/:studyId/status
  * Update the status of an EEG study
  */
-router.patch("/studies/:studyId/status", async (req, res) => {
+router.patch("/studies/:studyId/status", requireAuth, async (req, res) => {
   try {
     // Validate studyId
     const studyId = validateId(req.params.studyId, "study id");
@@ -176,9 +178,9 @@ router.patch("/studies/:studyId/status", async (req, res) => {
 
 /**
  * DELETE /studies/:studyId
- * Delete an EEG study
+ * Delete an EEG study (ADMIN ONLY)
  */
-router.delete("/studies/:studyId", async (req, res) => {
+router.delete("/studies/:studyId", requireAdmin, async (req, res) => {
   try {
     // Validate studyId
     const studyId = validateId(req.params.studyId, "study id");

@@ -15,6 +15,7 @@ import PDFGenerator from "./PDFGenerator";
 import EEGProcessingOverlay from "./EEGProcessingOverlay";
 import BrainStudyViewer from "./BrainStudyViewer";
 import React from "react";
+import { useAuth } from "../hooks/useAuth";
 
 const views = [
   "medial",
@@ -32,6 +33,7 @@ const views = [
 
 const PatientDetails = () => {
   let { id } = useParams();
+  const { isAdmin } = useAuth();
   const [patient, setPatient] = useState(null);
   const [isEpilepsy, setIsEpilepsy] = useState(false);
   const [comments, setComments] = useState("");
@@ -94,7 +96,15 @@ const PatientDetails = () => {
           }
           setPatient(response.data.patientUpdated);
         })
-        .catch(() => {})
+        .catch((error) => {
+          if (error.response?.status === 403) {
+            console.error("Access denied: Admin privileges required to edit patient information");
+          } else if (error.response?.status === 401) {
+            console.error("Session expired. Please log in again.");
+          } else {
+            console.error("Update failed:", error.response?.data?.message || error.message);
+          }
+        })
         .finally(() => {});
     },
     [isEpilepsy, comments]
@@ -448,13 +458,15 @@ const PatientDetails = () => {
         {/* Right: Action buttons */}
         <div className="flex flex-wrap gap-3">
           <PDFGenerator patient={patient} currentReport={selectedUpload} study={selectedStudyForViewer} />
-          <button
-            onClick={() => setVisible(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-white dark:bg-slate-800 border-2 border-emerald-200 dark:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 font-semibold px-5 py-2 transition-all duration-200"
-          >
-            <FileUploadIcon style={{ fontSize: "1.2rem" }} />
-            Upload EEG Data
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setVisible(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-white dark:bg-slate-800 border-2 border-emerald-200 dark:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 font-semibold px-5 py-2 transition-all duration-200"
+            >
+              <FileUploadIcon style={{ fontSize: "1.2rem" }} />
+              Upload EEG Data
+            </button>
+          )}
           <button
             onClick={() => {
               const brainSection = document.getElementById('brain-visualization-section');
@@ -558,51 +570,64 @@ const PatientDetails = () => {
             {/* Diagnosis Status */}
             <div className="mt-4">
               <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
-                Diagnosis
+                Diagnosis {!isAdmin && <span className="text-xs font-normal">(Read-only)</span>}
               </h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsEpilepsy(true)}
-                  className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-                    isEpilepsy
-                      ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-md"
-                      : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
-                  }`}
-                >
-                  Epilepsy
-                </button>
-                <button
-                  onClick={() => setIsEpilepsy(false)}
-                  className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-                    !isEpilepsy
-                      ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-md"
-                      : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
-                  }`}
-                >
-                  Non-epilepsy
-                </button>
-              </div>
+              {isAdmin ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEpilepsy(true)}
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                      isEpilepsy
+                        ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-md"
+                        : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    Epilepsy
+                  </button>
+                  <button
+                    onClick={() => setIsEpilepsy(false)}
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                      !isEpilepsy
+                        ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-md"
+                        : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    Non-epilepsy
+                  </button>
+                </div>
+              ) : (
+                <div className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {isEpilepsy ? "Epilepsy" : "Non-epilepsy"}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Clinical Notes */}
           <div className="flex flex-col">
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
-              Clinical Notes
+              Clinical Notes {!isAdmin && <span className="text-xs font-normal">(Read-only)</span>}
             </label>
             <textarea
-              className="flex-1 rounded-lg border border-emerald-100 dark:border-slate-600 bg-emerald-50/40 dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm resize-none outline-none focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-all placeholder:text-slate-500 dark:placeholder:text-slate-400"
-              placeholder="Enter clinical observations, notes, or recommendations..."
+              className="flex-1 rounded-lg border border-emerald-100 dark:border-slate-600 bg-emerald-50/40 dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm resize-none outline-none focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-all placeholder:text-slate-500 dark:placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              placeholder={isAdmin ? "Enter clinical observations, notes, or recommendations..." : "View clinical notes (admin-only editing)"}
               value={comments}
-              onChange={(e) => setComments(e.target.value)}
+              onChange={(e) => isAdmin && setComments(e.target.value)}
+              disabled={!isAdmin}
               rows={4}
             />
-            <button
-              onClick={() => handleSubmit(patient)}
-              className="mt-3 rounded-lg bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-semibold px-4 py-2 transition-all duration-200 shadow-sm text-sm"
-            >
-              Save Changes
-            </button>
+            {isAdmin ? (
+              <button
+                onClick={() => handleSubmit(patient)}
+                className="mt-3 rounded-lg bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-semibold px-4 py-2 transition-all duration-200 shadow-sm text-sm"
+              >
+                Save Changes
+              </button>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Only administrators can edit clinical notes
+              </p>
+            )}
           </div>
         </div>
       </motion.div>

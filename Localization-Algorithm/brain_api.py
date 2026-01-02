@@ -7,19 +7,54 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Then import FastAPI and other modules
-from fastapi import FastAPI, File, UploadFile, Form, status
+from fastapi import FastAPI, File, UploadFile, Form, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import subprocess
 import uuid
 import json
 import platform
+import logging
 
 # Load environment variables
 PORT = int(os.environ.get("PORT", 8000))
 FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
 BACKEND_ORIGIN = os.environ.get("BACKEND_ORIGIN", "http://localhost:3000")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
+    format='[%(levelname)s] %(asctime)s - %(name)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger("brain_api")
+
+# Define canonical uploads directory
+# Priority: UPLOADS_DIR env var > config.json (OS-specific) > default "/app/uploads"
+UPLOADS_DIR = os.environ.get("UPLOADS_DIR")
+if not UPLOADS_DIR:
+    # Fallback to config.json if available
+    try:
+        with open('config.json', 'r') as file:
+            config = json.load(file)
+        os_name = platform.system()
+        if os_name == 'Darwin':
+            UPLOADS_DIR = config.get('mac_path', '/app/uploads')
+            logger.info(f"MacOS detected, using config path: {UPLOADS_DIR}")
+        elif os_name == 'Windows':
+            UPLOADS_DIR = config.get('windows_path', '/app/uploads')
+            logger.info(f"Windows detected, using config path: {UPLOADS_DIR}")
+        else:
+            UPLOADS_DIR = '/app/uploads'
+            logger.info(f"Running on {platform.system()} {platform.machine()}, using default: {UPLOADS_DIR}")
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        UPLOADS_DIR = '/app/uploads'
+        logger.warning(f"Could not load config.json ({e}), using default: {UPLOADS_DIR}")
+
+# Ensure uploads directory exists at startup
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+logger.info(f"Uploads directory ready: {UPLOADS_DIR}")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -43,25 +78,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load config
-with open('config.json', 'r') as file:
-    config = json.load(file)
-
-os_name = platform.system()
-
-# Check if the OS is macOS or Windows
-if os_name == 'Darwin':
-    base_Path = config['mac_path']
-    print(f"[{LOG_LEVEL}] MacOS Detected: {base_Path}")
-elif os_name == 'Windows':
-    base_Path = config['windows_path']
-    print(f"[{LOG_LEVEL}] Windows Detected: {base_Path}")
-else:
-    # raise Exception("Unsupported operating system.")
-    print(f"[brain-api] Running on: {platform.system()} {platform.machine()} (continuing)")
-
-print(f"[{LOG_LEVEL}] FastAPI service initialized")
-print(f"[{LOG_LEVEL}] Allowed origins: {origins}")
+logger.info("FastAPI service initialized")
+logger.info(f"Allowed origins: {origins}")
 
 
 @app.get("/health")
@@ -78,58 +96,164 @@ async def health_check():
     }
 
 
+# Global exception handler for unhandled exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Global exception handler to catch all unhandled exceptions.
+    Logs full traceback without exposing sensitive information.
+    """
+    logger.exception(
+        f"Unhandled exception in {request.method} {request.url.path}",
+        extra={
+            "method": request.method,
+            "url": str(request.url),
+            "client": request.client.host if request.client else "unknown"
+        }
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred",
+            "path": request.url.path
+        }
+    )
+
+
 @app.post("/visualize_brain")
 async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(...), uploadId: str = Form(None)):
+    """
+    Main endpoint for EEG brain visualization.
+    Accepts uploaded EEG file (.fif, .h5, .mat) and runs the ML pipeline.
+    """
     try:
         # PHASE 3: Accept uploadId from frontend, or generate if not provided
         if uploadId:
-            print(f"[{LOG_LEVEL}] /visualize_brain - Using provided uploadId: {uploadId}")
+            logger.info(f"/visualize_brain - Using provided uploadId: {uploadId}")
         else:
             uploadId = str(uuid.uuid4())
-            print(f"[{LOG_LEVEL}] /visualize_brain - Generated new uploadId: {uploadId}")
+            logger.info(f"/visualize_brain - Generated new uploadId: {uploadId}")
 
-        upload_dir = os.path.join(base_Path, uploadId)
+        # Log file details for debugging
+        file_size = 0
+        if file.file:
+            # Get file size by seeking to end
+            file.file.seek(0, 2)  # Seek to end
+            file_size = file.file.tell()
+            file.file.seek(0)  # Reset to beginning
+
+        logger.info(
+            f"Received file upload",
+            extra={
+                "uploadId": uploadId,
+                "patientId": patientId,
+                "upload_filename": file.filename,
+                "content_type": file.content_type,
+                "file_size_bytes": file_size,
+                "file_size_mb": round(file_size / (1024 * 1024), 2)
+            }
+        )
+
+        # Compute and log upload directory path
+        upload_dir = os.path.join(UPLOADS_DIR, uploadId)
+        logger.info(f"Upload directory: {upload_dir}")
+
+        # Ensure uploads directory exists
         os.makedirs(upload_dir, exist_ok=True)
+        logger.debug(f"Created/verified upload directory: {upload_dir}")
 
         # Save the uploaded file to the specified location
         upload_path = os.path.join(upload_dir, file.filename)
+        logger.info(f"Saving file to: {upload_path}")
+
         with open(upload_path, "wb") as f:
             f.write(file.file.read())
 
-        subprocess.run(["python", "brain_visualizer.py", "--basePath", base_Path,
+        logger.info(f"File saved successfully, starting brain_visualizer.py")
+
+        # Run brain visualizer subprocess
+        subprocess.run(["python", "brain_visualizer.py", "--basePath", UPLOADS_DIR,
                         "--file", upload_path, "--patientId", patientId, "--uploadId", uploadId, "--historic", str(False)])
 
+        # Check for output file
         output_file = "output.json"
         if os.path.exists(output_file):
+            logger.info("Found output.json, reading results")
             with open(output_file, "r") as infile:
                 data = json.load(infile)
 
             # Delete the output file after reading its contents
             os.remove(output_file)
+            logger.info(f"Processing complete for uploadId: {uploadId}")
+            logger.debug(f"Result data: {data}")
+
+            return JSONResponse(
+                content={"message": "Brain visualization triggered.", "data": data},
+                status_code=status.HTTP_200_OK
+            )
         else:
-            return JSONResponse(content={"message": "Brain visualization triggered."}, status_code=status.HTTP_200_OK)
-        print(data)
-        return JSONResponse(content={"message": "Brain visualization triggered.", "data": data}, status_code=status.HTTP_200_OK)
+            logger.warning("output.json not found, returning basic success response")
+            return JSONResponse(
+                content={"message": "Brain visualization triggered."},
+                status_code=status.HTTP_200_OK
+            )
+
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        logger.exception(
+            "visualize_brain failed",
+            extra={
+                "uploadId": uploadId if 'uploadId' in locals() else None,
+                "patientId": patientId,
+                "upload_filename": file.filename if file else None
+            }
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal Server Error",
+                "message": "visualize_brain failed",
+                "uploadId": uploadId if 'uploadId' in locals() else None
+            }
+        )
 
 
 @app.post("/visualize_brain_historic")
 async def visualize_brain_historic(uploadId: str = Form(...)):
-
+    """
+    Reprocess historical EEG data from a previous upload.
+    """
     try:
+        logger.info(f"Processing historic visualization for uploadId: {uploadId}")
+
         # Save the uploaded file to the specified location
-        upload_dir = os.path.join(base_Path, uploadId)
+        upload_dir = os.path.join(UPLOADS_DIR, uploadId)
+        logger.info(f"Upload directory: {upload_dir}")
 
         if not os.path.exists(upload_dir):
+            logger.warning(f"Upload directory not found: {upload_dir}")
             return JSONResponse(content={"message": "No Visualization record found."})
 
+        logger.info("Starting brain_visualizer.py for historic data")
         subprocess.run(["python", "brain_visualizer.py",
                        "--upload_dir", upload_dir, "--historic", str(True)])
 
+        logger.info(f"Historic visualization complete for uploadId: {uploadId}")
         return JSONResponse(content={"message": "Brain visualization triggered."})
+
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        logger.exception(
+            "visualize_brain_historic failed",
+            extra={"uploadId": uploadId}
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal Server Error",
+                "message": "visualize_brain_historic failed",
+                "uploadId": uploadId
+            }
+        )
 
 
 @app.post("/api/human-mtl-demo")
@@ -139,12 +263,13 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
     This endpoint accepts dataset parameters and runs brain_visualizer.py with the specified dataset.
     """
     try:
-        print(f"[{LOG_LEVEL}] /api/human-mtl-demo - Starting pipeline")
-        print(f"[{LOG_LEVEL}] Patient ID: {patientId}, Upload ID: {uploadId}")
-        print(f"[{LOG_LEVEL}] Dataset file: {datasetFilePath}")
+        logger.info("/api/human-mtl-demo - Starting pipeline")
+        logger.info(f"Patient ID: {patientId}, Upload ID: {uploadId}")
+        logger.info(f"Dataset file: {datasetFilePath}")
 
         # Verify dataset file exists
         if not os.path.exists(datasetFilePath):
+            logger.error(f"Dataset file not found: {datasetFilePath}")
             return JSONResponse(
                 status_code=404,
                 content={
@@ -158,7 +283,7 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
             [
                 "python3",
                 "brain_visualizer.py",
-                "--basePath", base_Path,
+                "--basePath", UPLOADS_DIR,
                 "--file", datasetFilePath,
                 "--patientId", patientId,
                 "--uploadId", uploadId,
@@ -170,8 +295,8 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
         )
 
         if result.returncode != 0:
-            print(f"[{LOG_LEVEL}] Pipeline failed with error:")
-            print(f"[{LOG_LEVEL}] STDERR: {result.stderr}")
+            logger.error("Pipeline failed with error:")
+            logger.error(f"STDERR: {result.stderr}")
             return JSONResponse(
                 status_code=500,
                 content={
@@ -181,7 +306,7 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
                 }
             )
 
-        print(f"[{LOG_LEVEL}] Pipeline completed successfully")
+        logger.info("Pipeline completed successfully")
 
         # Check for output.json
         output_file = "output.json"
@@ -208,6 +333,10 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
             )
 
     except subprocess.TimeoutExpired:
+        logger.error(
+            "human-mtl-demo pipeline timeout (exceeded 5 minutes)",
+            extra={"uploadId": uploadId, "patientId": patientId}
+        )
         return JSONResponse(
             status_code=500,
             content={
@@ -216,12 +345,20 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
             }
         )
     except Exception as e:
-        print(f"[{LOG_LEVEL}] Error in human-mtl-demo: {str(e)}")
+        logger.exception(
+            "human-mtl-demo failed",
+            extra={
+                "uploadId": uploadId,
+                "patientId": patientId,
+                "datasetFilePath": datasetFilePath
+            }
+        )
         return JSONResponse(
             status_code=500,
             content={
                 "success": False,
-                "error": str(e)
+                "error": "Internal Server Error",
+                "message": "human-mtl-demo failed"
             }
         )
 
@@ -247,14 +384,14 @@ async def visualize_brain_dev(patientId: str = Form(...), file: UploadFile = Fil
         )
 
     try:
-        print(f"[DEV] Processing dev upload for patient: {patientId}")
+        logger.info(f"[DEV] Processing dev upload for patient: {patientId}")
 
         # PHASE 3: Accept uploadId from frontend, or generate if not provided
         if uploadId:
-            print(f"[DEV] Using provided uploadId: {uploadId}")
+            logger.info(f"[DEV] Using provided uploadId: {uploadId}")
         else:
             uploadId = f"dev-{str(uuid.uuid4())}"
-            print(f"[DEV] Generated new uploadId: {uploadId}")
+            logger.info(f"[DEV] Generated new uploadId: {uploadId}")
 
         # Generate placeholder image URLs
         placeholder_urls = {
@@ -324,7 +461,7 @@ async def visualize_brain_dev(patientId: str = Form(...), file: UploadFile = Fil
         if api_key:
             headers["x-epicare-key"] = api_key
 
-        print(f"[DEV] Calling Node backend at: {node_api_url}/patients/upload")
+        logger.info(f"[DEV] Calling Node backend at: {node_api_url}/patients/upload")
 
         # Call Node backend (exactly like real pipeline)
         response = requests.post(
@@ -334,12 +471,12 @@ async def visualize_brain_dev(patientId: str = Form(...), file: UploadFile = Fil
         )
 
         if response.status_code == 200:
-            print(f"[DEV] ✓ Node backend callback successful")
-            print(f"[DEV] ✓ Patient updated: {response.json().get('patientUpdated')}")
-            print(f"[DEV] ✓ Study updated: {response.json().get('studyUpdated')}")
+            logger.info("[DEV] ✓ Node backend callback successful")
+            logger.info(f"[DEV] ✓ Patient updated: {response.json().get('patientUpdated')}")
+            logger.info(f"[DEV] ✓ Study updated: {response.json().get('studyUpdated')}")
         else:
-            print(f"[DEV] ✗ Node backend callback failed: {response.status_code}")
-            print(f"[DEV] Response: {response.text}")
+            logger.error(f"[DEV] ✗ Node backend callback failed: {response.status_code}")
+            logger.error(f"[DEV] Response: {response.text}")
 
         # Return success response (matching real endpoint structure)
         return JSONResponse(
@@ -353,5 +490,18 @@ async def visualize_brain_dev(patientId: str = Form(...), file: UploadFile = Fil
         )
 
     except Exception as e:
-        print(f"[DEV] ✗ Error: {str(e)}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        logger.exception(
+            "[DEV] visualize_brain_dev failed",
+            extra={
+                "uploadId": uploadId if 'uploadId' in locals() else None,
+                "patientId": patientId
+            }
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal Server Error",
+                "message": "visualize_brain_dev failed",
+                "uploadId": uploadId if 'uploadId' in locals() else None
+            }
+        )

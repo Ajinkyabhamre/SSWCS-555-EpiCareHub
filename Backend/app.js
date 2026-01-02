@@ -35,6 +35,12 @@ app.use(
     secret: process.env.SESSION_SECRET || "change_me_in_production",
     saveUninitialized: false,
     resave: false,
+    cookie: {
+      httpOnly: true, // Prevent XSS attacks
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production, false in dev
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'lax' for dev, 'none' for prod with HTTPS
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+    },
   })
 );
 

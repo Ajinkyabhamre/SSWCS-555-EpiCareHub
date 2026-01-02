@@ -48,7 +48,7 @@ services:
       - PYTHONUNBUFFERED=1
       - KMP_DUPLICATE_LIB_OK=TRUE
       - MPLBACKEND=Agg
-      - BASE_PATH=/app/uploads
+      - UPLOADS_DIR=/app/uploads
       # Override with Docker-specific URL (container-to-container)
       - NODE_API_URL=http://backend:3000
       # All other env vars (Cloudinary, API keys, etc.) loaded from .env file

@@ -9,6 +9,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const CustomDataTable = ({
   data,
@@ -25,6 +26,7 @@ const CustomDataTable = ({
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const genderOptions = [
     { label: "All", value: "All" },
@@ -277,28 +279,36 @@ const CustomDataTable = ({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-center gap-2">
-                      <Tooltip title="Edit" arrow>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditClick(patient);
-                          }}
-                          className="p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 transition-colors"
-                        >
-                          <EditIcon className="w-5 h-5" />
-                        </button>
-                      </Tooltip>
-                      <Tooltip title="Delete" arrow>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteClick(patient);
-                          }}
-                          className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 transition-colors"
-                        >
-                          <DeleteIcon className="w-5 h-5" />
-                        </button>
-                      </Tooltip>
+                      {isAdmin ? (
+                        <>
+                          <Tooltip title="Edit" arrow>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditClick(patient);
+                              }}
+                              className="p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 transition-colors"
+                            >
+                              <EditIcon className="w-5 h-5" />
+                            </button>
+                          </Tooltip>
+                          <Tooltip title="Delete" arrow>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteClick(patient);
+                              }}
+                              className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 transition-colors"
+                            >
+                              <DeleteIcon className="w-5 h-5" />
+                            </button>
+                          </Tooltip>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
+                          View Only
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>

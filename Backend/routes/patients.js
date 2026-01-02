@@ -19,13 +19,15 @@ import moment from "moment";
 import axios from "axios";
 import internal, { Readable } from "stream";
 import { validateInternalApiKey } from "../middleware/internalApiKey.js";
+import { requireAuth } from "../middleware/requireAuth.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
 
 router
   .route("/")
   .get(async (req, res) => {
     return res.send("GET request to http://localhost:3000/paitents");
   })
-  .post(async (req, res) => {
+  .post(requireAuth, async (req, res) => {
     try {
       req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
       req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
@@ -69,7 +71,7 @@ router
   .delete(async (req, res) => {
     return res.send("DELETE request to http://localhost:3000/paitents");
   })
-  .put(async (req, res) => {
+  .put(requireAdmin, async (req, res) => {
     try {
       req.body.id = validateId(req.body.id, "patient id");
       req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
@@ -113,7 +115,7 @@ router
     return res.send("PATCH request to http://localhost:3000/paitents");
   });
 
-router.route("/statistics").get(async (req, res) => {
+router.route("/statistics").get(requireAuth, async (req, res) => {
   try {
     const getAllStats = await patientsData.getPatientStats();
     return res.json(getAllStats);
@@ -122,7 +124,7 @@ router.route("/statistics").get(async (req, res) => {
   }
 });
 
-router.route("/get").post(async (req, res) => {
+router.route("/get").post(requireAuth, async (req, res) => {
   try {
     if (req.body.firstName !== undefined)
       req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
@@ -149,7 +151,7 @@ router.route("/get").post(async (req, res) => {
 
 router
   .route("/:id")
-  .get(async (req, res) => {
+  .get(requireAuth, async (req, res) => {
     try {
       req.params.id = validateId(req.params.id, "patient id");
     } catch (error) {
@@ -163,7 +165,7 @@ router
     }
   })
   .put(async (req, res) => {})
-  .delete(async (req, res) => {
+  .delete(requireAdmin, async (req, res) => {
     try {
       req.params.id = validateId(req.params.id, "patient id");
     } catch (error) {

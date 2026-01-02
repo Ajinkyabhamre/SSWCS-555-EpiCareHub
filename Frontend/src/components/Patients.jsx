@@ -12,6 +12,7 @@ import { useDispatch } from "react-redux";
 import { selectUpload, clearUpload } from "../features/patientSlice";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import EEGProcessingOverlay from "./EEGProcessingOverlay";
+import { useAuth } from "../hooks/useAuth";
 
 const Patients = () => {
   const [data, setData] = useState([]);
@@ -27,6 +28,7 @@ const Patients = () => {
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
+  const { isAdmin } = useAuth();
 
   // PHASE 6: Processing overlay state
   const [processingOverlay, setProcessingOverlay] = useState({
@@ -306,11 +308,17 @@ const Patients = () => {
           setIsFile(false);
         })
         .catch((error) => {
-          const errorMsg = error.message || "Error saving patient";
-          setMessage(errorMsg);
+          if (error.response?.status === 403) {
+            setMessage("Access denied: Admin privileges required to edit patient information");
+          } else if (error.response?.status === 401) {
+            setMessage("Your session has expired. Please log in again.");
+          } else {
+            const errorMsg = error.response?.data?.message || error.message || "Error saving patient";
+            setMessage(errorMsg);
+          }
           setOpen(true);
           if (!selectedPatient) {
-            setError(errorMsg);
+            setError(error.response?.data?.message || error.message);
           }
         })
         .finally(() => {
@@ -339,10 +347,16 @@ const Patients = () => {
         setConfirmDelete(false);
       })
       .catch((error) => {
-        const errorMsg = error.message || "Failed to delete patient";
-        setMessage(errorMsg);
+        if (error.response?.status === 403) {
+          setMessage("Access denied: Admin privileges required to delete patients");
+        } else if (error.response?.status === 401) {
+          setMessage("Your session has expired. Please log in again.");
+        } else {
+          const errorMsg = error.response?.data?.message || error.message || "Failed to delete patient";
+          setMessage(errorMsg);
+        }
         setOpen(true);
-        setError(errorMsg);
+        setError(error.response?.data?.message || error.message);
       })
       .finally(() => {
         setLoading(false);

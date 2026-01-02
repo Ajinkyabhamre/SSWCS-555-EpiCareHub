@@ -6,12 +6,15 @@ const PYTHON_API_URL = import.meta.env.VITE_PYTHON_API_URL || 'http://localhost:
 
 /**
  * Create an Axios instance for the backend API
+ *
+ * IMPORTANT: withCredentials: true enables sending cookies (session authentication)
  */
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable sending cookies for session auth
 });
 
 /**
@@ -22,6 +25,7 @@ export const pythonApiClient = axios.create({
   headers: {
     'Content-Type': 'multipart/form-data',
   },
+  withCredentials: true, // Enable sending cookies
 });
 
 // Export the URLs for other components that might need them

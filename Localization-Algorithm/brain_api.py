@@ -56,6 +56,52 @@ if not UPLOADS_DIR:
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 logger.info(f"Uploads directory ready: {UPLOADS_DIR}")
 
+
+# ============================================================================
+# PATH UTILITIES - Single source of truth for file locations
+# ============================================================================
+
+def get_upload_dir(uploadId: str) -> str:
+    """Get the canonical upload directory for a given uploadId."""
+    return os.path.join(UPLOADS_DIR, uploadId)
+
+
+def get_output_json_path(uploadId: str) -> str:
+    """Get the canonical path to output.json for a given uploadId."""
+    return os.path.join(get_upload_dir(uploadId), "output.json")
+
+
+def ensure_upload_dir(uploadId: str) -> str:
+    """Ensure upload directory exists and return its path."""
+    upload_dir = get_upload_dir(uploadId)
+    os.makedirs(upload_dir, exist_ok=True)
+    return upload_dir
+
+
+def write_output_json(uploadId: str, data: dict) -> None:
+    """Write output.json to the correct location with error handling."""
+    output_path = get_output_json_path(uploadId)
+    try:
+        with open(output_path, "w") as outfile:
+            json.dump(data, outfile, indent=2)
+        logger.info(f"[ARTIFACT] Wrote output.json to: {output_path}")
+    except Exception as e:
+        logger.error(f"[ARTIFACT] Failed to write output.json: {e}")
+        raise
+
+
+def read_output_json(uploadId: str) -> dict:
+    """Read output.json from the correct location."""
+    output_path = get_output_json_path(uploadId)
+    if not os.path.exists(output_path):
+        raise FileNotFoundError(f"output.json not found at {output_path}")
+
+    with open(output_path, "r") as infile:
+        data = json.load(infile)
+    logger.info(f"[ARTIFACT] Read output.json from: {output_path}")
+    return data
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title="EpiCareHub Localization Algorithm",
@@ -127,93 +173,171 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
     Main endpoint for EEG brain visualization.
     Accepts uploaded EEG file (.fif, .h5, .mat) and runs the ML pipeline.
     """
+    uploadId_for_error = None
     try:
-        # PHASE 3: Accept uploadId from frontend, or generate if not provided
+        # Generate or use provided uploadId
         if uploadId:
-            logger.info(f"/visualize_brain - Using provided uploadId: {uploadId}")
+            logger.info(f"[REQUEST] /visualize_brain - Using provided uploadId: {uploadId}")
         else:
             uploadId = str(uuid.uuid4())
-            logger.info(f"/visualize_brain - Generated new uploadId: {uploadId}")
+            logger.info(f"[REQUEST] /visualize_brain - Generated new uploadId: {uploadId}")
+
+        uploadId_for_error = uploadId
 
         # Log file details for debugging
         file_size = 0
         if file.file:
-            # Get file size by seeking to end
             file.file.seek(0, 2)  # Seek to end
             file_size = file.file.tell()
             file.file.seek(0)  # Reset to beginning
 
         logger.info(
-            f"Received file upload",
-            extra={
-                "uploadId": uploadId,
-                "patientId": patientId,
-                "upload_filename": file.filename,
-                "content_type": file.content_type,
-                "file_size_bytes": file_size,
-                "file_size_mb": round(file_size / (1024 * 1024), 2)
-            }
+            f"[REQUEST] File upload details: patientId={patientId}, filename={file.filename}, "
+            f"size={round(file_size / (1024 * 1024), 2)}MB"
         )
 
-        # Compute and log upload directory path
-        upload_dir = os.path.join(UPLOADS_DIR, uploadId)
-        logger.info(f"Upload directory: {upload_dir}")
+        # Use path utilities
+        upload_dir = ensure_upload_dir(uploadId)
+        logger.info(f"[REQUEST] Upload directory: {upload_dir}")
 
-        # Ensure uploads directory exists
-        os.makedirs(upload_dir, exist_ok=True)
-        logger.debug(f"Created/verified upload directory: {upload_dir}")
-
-        # Save the uploaded file to the specified location
+        # Save uploaded file
         upload_path = os.path.join(upload_dir, file.filename)
-        logger.info(f"Saving file to: {upload_path}")
+        logger.info(f"[REQUEST] Saving file to: {upload_path}")
 
         with open(upload_path, "wb") as f:
             f.write(file.file.read())
 
-        logger.info(f"File saved successfully, starting brain_visualizer.py")
+        logger.info(f"[PIPELINE] Starting brain_visualizer.py for uploadId: {uploadId}")
 
-        # Run brain visualizer subprocess
-        subprocess.run(["python", "brain_visualizer.py", "--basePath", UPLOADS_DIR,
-                        "--file", upload_path, "--patientId", patientId, "--uploadId", uploadId, "--historic", str(False)])
+        # Run brain visualizer subprocess with timeout and stderr capture
+        result = subprocess.run(
+            [
+                "python", "brain_visualizer.py",
+                "--basePath", UPLOADS_DIR,
+                "--file", upload_path,
+                "--patientId", patientId,
+                "--uploadId", uploadId,
+                "--historic", "false"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,  # 3 minute timeout
+            cwd="/app"  # Explicit working directory
+        )
 
-        # Check for output file
-        output_file = "output.json"
-        if os.path.exists(output_file):
-            logger.info("Found output.json, reading results")
-            with open(output_file, "r") as infile:
-                data = json.load(infile)
+        logger.info(f"[PIPELINE] brain_visualizer.py completed with return code: {result.returncode}")
 
-            # Delete the output file after reading its contents
-            os.remove(output_file)
-            logger.info(f"Processing complete for uploadId: {uploadId}")
-            logger.debug(f"Result data: {data}")
+        # Log last 2000 chars of stdout/stderr for debugging
+        if result.stdout:
+            logger.debug(f"[PIPELINE] STDOUT (last 2000 chars): {result.stdout[-2000:]}")
+        if result.stderr:
+            logger.warning(f"[PIPELINE] STDERR (last 2000 chars): {result.stderr[-2000:]}")
 
+        # Check for output.json in the CORRECT location (upload directory)
+        try:
+            data = read_output_json(uploadId)
+
+            # Check if output contains error
+            if "error" in data:
+                logger.error(f"[PIPELINE] Processing failed: {data['error']}")
+                # Still write the error to output.json for inspection
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "error": "Pipeline processing failed",
+                        "message": str(data.get("error", "Unknown error")),
+                        "uploadId": uploadId,
+                        "details": data.get("traceback", "No traceback available")
+                    }
+                )
+
+            logger.info(f"[PIPELINE] Processing complete for uploadId: {uploadId}")
             return JSONResponse(
-                content={"message": "Brain visualization triggered.", "data": data},
+                content={"message": "Brain visualization complete", "data": data},
                 status_code=status.HTTP_200_OK
             )
-        else:
-            logger.warning("output.json not found, returning basic success response")
+
+        except FileNotFoundError as e:
+            logger.error(f"[PIPELINE] output.json not found at expected path: {get_output_json_path(uploadId)}")
+            logger.error(f"[PIPELINE] Return code: {result.returncode}")
+            logger.error(f"[PIPELINE] STDERR: {result.stderr}")
+
+            # Write error output.json ourselves
+            error_data = {
+                "error": "Pipeline did not produce output.json",
+                "uploadId": uploadId,
+                "returncode": result.returncode,
+                "stderr": result.stderr[-2000:] if result.stderr else "",
+                "stdout": result.stdout[-2000:] if result.stdout else ""
+            }
+            write_output_json(uploadId, error_data)
+
             return JSONResponse(
-                content={"message": "Brain visualization triggered."},
-                status_code=status.HTTP_200_OK
+                status_code=500,
+                content={
+                    "error": "Pipeline did not produce output",
+                    "message": "brain_visualizer.py did not create output.json",
+                    "uploadId": uploadId,
+                    "returncode": result.returncode
+                }
             )
+
+    except subprocess.TimeoutExpired as e:
+        logger.error(
+            f"[PIPELINE] Timeout after 180 seconds for uploadId: {uploadId_for_error}",
+            extra={"uploadId": uploadId_for_error, "patientId": patientId}
+        )
+
+        # Write timeout error to output.json
+        if uploadId_for_error:
+            timeout_data = {
+                "error": "Pipeline timeout after 180 seconds",
+                "uploadId": uploadId_for_error,
+                "stdout": e.stdout[-2000:] if e.stdout else "",
+                "stderr": e.stderr[-2000:] if e.stderr else ""
+            }
+            try:
+                write_output_json(uploadId_for_error, timeout_data)
+            except Exception:
+                pass
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Pipeline timeout",
+                "message": "Processing exceeded 180 second limit",
+                "uploadId": uploadId_for_error
+            }
+        )
 
     except Exception as e:
         logger.exception(
-            "visualize_brain failed",
+            "[PIPELINE] visualize_brain failed",
             extra={
-                "uploadId": uploadId if 'uploadId' in locals() else None,
+                "uploadId": uploadId_for_error,
                 "patientId": patientId,
                 "upload_filename": file.filename if file else None
             }
         )
+
+        # Write exception to output.json
+        if uploadId_for_error:
+            error_data = {
+                "error": str(e),
+                "uploadId": uploadId_for_error,
+                "traceback": str(e.__traceback__)
+            }
+            try:
+                write_output_json(uploadId_for_error, error_data)
+            except Exception:
+                pass
+
         return JSONResponse(
             status_code=500,
             content={
                 "error": "Internal Server Error",
-                "message": "visualize_brain failed",
-                "uploadId": uploadId if 'uploadId' in locals() else None
+                "message": str(e),
+                "uploadId": uploadId_for_error
             }
         )
 
@@ -224,33 +348,94 @@ async def visualize_brain_historic(uploadId: str = Form(...)):
     Reprocess historical EEG data from a previous upload.
     """
     try:
-        logger.info(f"Processing historic visualization for uploadId: {uploadId}")
+        logger.info(f"[REQUEST] /visualize_brain_historic for uploadId: {uploadId}")
 
-        # Save the uploaded file to the specified location
-        upload_dir = os.path.join(UPLOADS_DIR, uploadId)
-        logger.info(f"Upload directory: {upload_dir}")
+        # Check if upload directory exists
+        upload_dir = get_upload_dir(uploadId)
+        logger.info(f"[REQUEST] Upload directory: {upload_dir}")
 
         if not os.path.exists(upload_dir):
-            logger.warning(f"Upload directory not found: {upload_dir}")
-            return JSONResponse(content={"message": "No Visualization record found."})
+            logger.warning(f"[REQUEST] Upload directory not found: {upload_dir}")
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "error": "Not Found",
+                    "message": "No visualization record found for this uploadId",
+                    "uploadId": uploadId
+                }
+            )
 
-        logger.info("Starting brain_visualizer.py for historic data")
-        subprocess.run(["python", "brain_visualizer.py",
-                       "--upload_dir", upload_dir, "--historic", str(True)])
+        logger.info(f"[PIPELINE] Starting brain_visualizer.py for historic data")
 
-        logger.info(f"Historic visualization complete for uploadId: {uploadId}")
-        return JSONResponse(content={"message": "Brain visualization triggered."})
+        # Run with timeout and capture output
+        result = subprocess.run(
+            [
+                "python", "brain_visualizer.py",
+                "--upload_dir", upload_dir,
+                "--historic", "true"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            cwd="/app"
+        )
+
+        logger.info(f"[PIPELINE] Historic processing completed with return code: {result.returncode}")
+
+        if result.stdout:
+            logger.debug(f"[PIPELINE] STDOUT: {result.stdout[-2000:]}")
+        if result.stderr:
+            logger.warning(f"[PIPELINE] STDERR: {result.stderr[-2000:]}")
+
+        # Try to read output.json
+        try:
+            data = read_output_json(uploadId)
+
+            if "error" in data:
+                logger.error(f"[PIPELINE] Historic processing failed: {data['error']}")
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "error": "Historic processing failed",
+                        "message": str(data.get("error")),
+                        "uploadId": uploadId
+                    }
+                )
+
+            logger.info(f"[PIPELINE] Historic visualization complete for uploadId: {uploadId}")
+            return JSONResponse(
+                content={"message": "Historic visualization complete", "data": data},
+                status_code=status.HTTP_200_OK
+            )
+
+        except FileNotFoundError:
+            logger.warning(f"[PIPELINE] No output.json found, returning basic success")
+            return JSONResponse(
+                content={"message": "Historic visualization triggered (no output data)"},
+                status_code=status.HTTP_200_OK
+            )
+
+    except subprocess.TimeoutExpired:
+        logger.error(f"[PIPELINE] Historic processing timeout for uploadId: {uploadId}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Pipeline timeout",
+                "message": "Historic processing exceeded 180 second limit",
+                "uploadId": uploadId
+            }
+        )
 
     except Exception as e:
         logger.exception(
-            "visualize_brain_historic failed",
+            "[PIPELINE] visualize_brain_historic failed",
             extra={"uploadId": uploadId}
         )
         return JSONResponse(
             status_code=500,
             content={
                 "error": "Internal Server Error",
-                "message": "visualize_brain_historic failed",
+                "message": str(e),
                 "uploadId": uploadId
             }
         )
@@ -263,25 +448,31 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
     This endpoint accepts dataset parameters and runs brain_visualizer.py with the specified dataset.
     """
     try:
-        logger.info("/api/human-mtl-demo - Starting pipeline")
-        logger.info(f"Patient ID: {patientId}, Upload ID: {uploadId}")
-        logger.info(f"Dataset file: {datasetFilePath}")
+        logger.info(f"[REQUEST] /api/human-mtl-demo - patientId={patientId}, uploadId={uploadId}")
+        logger.info(f"[REQUEST] Dataset file: {datasetFilePath}")
 
         # Verify dataset file exists
         if not os.path.exists(datasetFilePath):
-            logger.error(f"Dataset file not found: {datasetFilePath}")
+            logger.error(f"[REQUEST] Dataset file not found: {datasetFilePath}")
             return JSONResponse(
                 status_code=404,
                 content={
                     "success": False,
-                    "error": f"Dataset file not found: {datasetFilePath}"
+                    "error": f"Dataset file not found: {datasetFilePath}",
+                    "uploadId": uploadId
                 }
             )
+
+        # Ensure upload directory exists
+        upload_dir = ensure_upload_dir(uploadId)
+        logger.info(f"[REQUEST] Upload directory: {upload_dir}")
+
+        logger.info(f"[PIPELINE] Starting brain_visualizer.py for Human MTL demo")
 
         # Run brain_visualizer.py with the dataset
         result = subprocess.run(
             [
-                "python3",
+                "python",
                 "brain_visualizer.py",
                 "--basePath", UPLOADS_DIR,
                 "--file", datasetFilePath,
@@ -291,30 +482,54 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
             ],
             capture_output=True,
             text=True,
-            timeout=300  # 5 minute timeout
+            timeout=300,  # 5 minute timeout
+            cwd="/app"
         )
 
+        logger.info(f"[PIPELINE] Human MTL demo completed with return code: {result.returncode}")
+
+        if result.stdout:
+            logger.debug(f"[PIPELINE] STDOUT: {result.stdout[-2000:]}")
+        if result.stderr:
+            logger.warning(f"[PIPELINE] STDERR: {result.stderr[-2000:]}")
+
         if result.returncode != 0:
-            logger.error("Pipeline failed with error:")
-            logger.error(f"STDERR: {result.stderr}")
+            logger.error(f"[PIPELINE] Pipeline failed with return code: {result.returncode}")
+
+            # Write error to output.json
+            error_data = {
+                "error": "Pipeline execution failed",
+                "returncode": result.returncode,
+                "stderr": result.stderr[-2000:] if result.stderr else "",
+                "uploadId": uploadId
+            }
+            write_output_json(uploadId, error_data)
+
             return JSONResponse(
                 status_code=500,
                 content={
                     "success": False,
                     "error": "Pipeline execution failed",
-                    "details": result.stderr
+                    "details": result.stderr,
+                    "uploadId": uploadId
                 }
             )
 
-        logger.info("Pipeline completed successfully")
+        # Try to read output.json from correct location
+        try:
+            data = read_output_json(uploadId)
 
-        # Check for output.json
-        output_file = "output.json"
-        if os.path.exists(output_file):
-            with open(output_file, "r") as infile:
-                data = json.load(infile)
-            os.remove(output_file)
+            if "error" in data:
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "success": False,
+                        "error": str(data.get("error")),
+                        "uploadId": uploadId
+                    }
+                )
 
+            logger.info(f"[PIPELINE] Human MTL demo analysis completed for uploadId: {uploadId}")
             return JSONResponse(
                 content={
                     "success": True,
@@ -323,42 +538,72 @@ async def run_human_mtl_demo(patientId: str = Form(...), uploadId: str = Form(..
                 },
                 status_code=status.HTTP_200_OK
             )
-        else:
+
+        except FileNotFoundError:
+            logger.warning(f"[PIPELINE] No output.json found for uploadId: {uploadId}")
             return JSONResponse(
                 content={
                     "success": True,
-                    "message": "Pipeline completed (no output.json generated)"
+                    "message": "Pipeline completed (no output.json generated)",
+                    "uploadId": uploadId
                 },
                 status_code=status.HTTP_200_OK
             )
 
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as e:
         logger.error(
-            "human-mtl-demo pipeline timeout (exceeded 5 minutes)",
+            f"[PIPELINE] human-mtl-demo timeout (exceeded 5 minutes)",
             extra={"uploadId": uploadId, "patientId": patientId}
         )
+
+        # Write timeout error to output.json
+        timeout_data = {
+            "error": "Pipeline timeout after 300 seconds",
+            "uploadId": uploadId,
+            "stdout": e.stdout[-2000:] if e.stdout else "",
+            "stderr": e.stderr[-2000:] if e.stderr else ""
+        }
+        try:
+            write_output_json(uploadId, timeout_data)
+        except Exception:
+            pass
+
         return JSONResponse(
             status_code=500,
             content={
                 "success": False,
-                "error": "Pipeline execution timeout (exceeded 5 minutes)"
+                "error": "Pipeline execution timeout (exceeded 5 minutes)",
+                "uploadId": uploadId
             }
         )
+
     except Exception as e:
         logger.exception(
-            "human-mtl-demo failed",
+            "[PIPELINE] human-mtl-demo failed",
             extra={
                 "uploadId": uploadId,
                 "patientId": patientId,
                 "datasetFilePath": datasetFilePath
             }
         )
+
+        # Write exception to output.json
+        error_data = {
+            "error": str(e),
+            "uploadId": uploadId
+        }
+        try:
+            write_output_json(uploadId, error_data)
+        except Exception:
+            pass
+
         return JSONResponse(
             status_code=500,
             content={
                 "success": False,
                 "error": "Internal Server Error",
-                "message": "human-mtl-demo failed"
+                "message": str(e),
+                "uploadId": uploadId
             }
         )
 

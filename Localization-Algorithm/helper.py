@@ -14,7 +14,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 import h5py
-from pyvistaqt import BackgroundPlotter
+# Removed pyvistaqt import - not needed for headless Docker operation
+# MNE's plot_source_estimates() works without Qt/GUI dependencies
 import cloudinary
 from cloudinary import uploader
 import requests
@@ -488,13 +489,15 @@ def save_evoked_data(uploadId, file, event, path):
 
 
 def brain3d(file, uploadId, s_pred, directory, request, hemi):
+    print(f"[brain3d] START - uploadId={uploadId}, hemi={hemi}")
     request['images'] = []
     stc = get_stc(file)
     stc.data = s_pred
     data_path = mne.datasets.sample.data_path()
     subjects_dir = data_path / 'subjects'
 
-    plotter = BackgroundPlotter()
+    # Removed BackgroundPlotter() - not needed for headless PNG generation
+    # MNE Brain object handles image saving via brain.save_image()
     brain = mne.viz.plot_source_estimates(
         stc,
         views='lateral',
@@ -504,6 +507,8 @@ def brain3d(file, uploadId, s_pred, directory, request, hemi):
         size=(1000, 400),
         subjects_dir=subjects_dir,
     )
+    print(f"[brain3d] Created MNE Brain object, generating {11} view snapshots...")
+
     views = ['medial', 'rostral', 'caudal', 'dorsal', 'ventral',
              'frontal', 'parietal', 'axial', 'sagittal', 'coronal', 'lateral']
     for view in views:
@@ -516,6 +521,8 @@ def brain3d(file, uploadId, s_pred, directory, request, hemi):
         cloudinary_url = response['secure_url']
         request['images'].append(cloudinary_url)
         os.remove(view_path)
+
+    print(f"[brain3d] Uploaded {len(request['images'])} brain images to Cloudinary")
 
     # Get Node backend URL and API key from environment
     node_api_url = os.environ.get("NODE_API_URL", "http://localhost:3000")
@@ -532,6 +539,7 @@ def brain3d(file, uploadId, s_pred, directory, request, hemi):
     if 'hotspots' in request:
         print(f"[PHASE 5] Sending {len(request['hotspots'])} hotspots to Node")
 
+    print(f"[brain3d] POSTing to Node backend: {node_api_url}/patients/upload")
     response = requests.post(
         f"{node_api_url}/patients/upload",
         json=request,
@@ -539,19 +547,28 @@ def brain3d(file, uploadId, s_pred, directory, request, hemi):
     )
 
     if response.status_code == 200:
-        print("Request successful!")
+        print(f"[brain3d] ✓ Node backend callback SUCCESS (200)")
     else:
-        print(f"Request failed with status code: {response.status_code}")
-    plotter.app.exec_()
+        print(f"[brain3d] ✗ Node backend callback FAILED: {response.status_code}")
+        print(f"[brain3d] Response: {response.text[:200]}")
+
+    # CRITICAL: Removed plotter.app.exec_() - this was blocking the container forever!
+    # In headless Docker mode, we don't need Qt event loops
+    print(f"[brain3d] COMPLETE - returning control (headless mode, no GUI blocking)")
 
 
 def brain3dOnlyVisualize(file, s_pred, directory, hemi):
+    """
+    Headless brain visualization (local snapshots only, no Cloudinary upload).
+    Saves PNG files to directory for manual inspection.
+    """
+    print(f"[brain3dOnlyVisualize] START - Generating local brain snapshots to {directory}")
     stc = get_stc(file)
     stc.data = s_pred
     data_path = mne.datasets.sample.data_path()
     subjects_dir = data_path / 'subjects'
 
-    plotter = BackgroundPlotter()
+    # Removed BackgroundPlotter() - not needed for headless PNG generation
     brain = mne.viz.plot_source_estimates(
         stc,
         views='lateral',
@@ -561,7 +578,19 @@ def brain3dOnlyVisualize(file, s_pred, directory, hemi):
         size=(1000, 400),
         subjects_dir=subjects_dir,
     )
-    plotter.app.exec_()
+
+    # Save 5 key views to directory (no upload)
+    views = ['lateral', 'medial', 'rostral', 'caudal', 'dorsal']
+    saved_files = []
+    for view in views:
+        view_filename = f'brain_{view}.png'
+        view_path = os.path.join(directory, view_filename)
+        brain.show_view(view)
+        brain.save_image(view_path)
+        saved_files.append(view_path)
+
+    print(f"[brain3dOnlyVisualize] COMPLETE - Saved {len(saved_files)} snapshots (headless mode, no GUI)")
+    # CRITICAL: Removed plotter.app.exec_() - this was blocking the container forever!
 
 
 def compute_localization_summary(stc_or_data, n_top=3):

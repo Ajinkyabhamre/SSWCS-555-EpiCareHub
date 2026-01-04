@@ -4,7 +4,7 @@ services:
   # Backend - Node/Express API
   backend:
     build:
-      context: ./Backend
+      context: ./apps/backend
       dockerfile: Dockerfile
     container_name: epicarehub-backend
     restart: unless-stopped
@@ -36,7 +36,7 @@ services:
   # Brain API - Python/FastAPI for EEG processing
   brain-api:
     build:
-      context: ./Localization-Algorithm
+      context: ./apps/brain-api
       dockerfile: Dockerfile
     container_name: epicarehub-brain-api
     restart: unless-stopped
@@ -75,16 +75,16 @@ services:
   # Frontend - React/Vite app served by Nginx
   frontend:
     build:
-      context: ./Frontend
+      context: ./apps/frontend
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
         VITE_PYTHON_API_URL: ${VITE_PYTHON_API_URL}
         VITE_EPICARE_DEV_MODE: ${VITE_EPICARE_DEV_MODE}
         VITE_ENABLE_WEBGL_BRAIN: ${VITE_ENABLE_WEBGL_BRAIN}
+        VITE_BRAIN_MODELS_BASE_URL: ${VITE_BRAIN_MODELS_BASE_URL:-/models}
     container_name: epicarehub-frontend
     restart: unless-stopped
-    env_file: .env
     ports:
       - "5173:80"
     depends_on:

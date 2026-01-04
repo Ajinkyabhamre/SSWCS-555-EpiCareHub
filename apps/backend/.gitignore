@@ -1,0 +1,12 @@
+# Backend specific ignores
+
+# Uploaded files (should use cloud storage or Docker volume)
+uploads/
+
+# Session store (if using file-based sessions)
+sessions/
+
+# PM2 logs and configs
+pm2.config.js
+ecosystem.config.js
+.pm2/

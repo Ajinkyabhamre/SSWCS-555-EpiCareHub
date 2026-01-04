@@ -1,7 +1,5 @@
 # 🧠 EpiCareHub
 
-![CI](https://github.com/2024S-SSW-555-EpiCareHub/SSWCS-555-EpiCareHub/actions/workflows/ci.yml/badge.svg)
-
 **EpiCareHub** is a medical platform for epilepsy seizure localization using 3D brain visualization and AI-powered analysis of intracranial EEG data. The system processes electrode recordings, identifies seizure hotspots using ML algorithms, and presents results through an interactive web interface with 4-view 3D brain renderings.
 
 ---
@@ -28,6 +26,7 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 20+
 - Python 3.11+
 - MongoDB (local or Atlas)
@@ -58,6 +57,7 @@ docker compose up -d
 ### Option 2: Manual Setup
 
 **Backend:**
+
 ```bash
 cd Backend
 npm install
@@ -67,6 +67,7 @@ npm start  # Runs on port 3000
 ```
 
 **Frontend:**
+
 ```bash
 cd Frontend
 npm install
@@ -76,6 +77,7 @@ npm run dev  # Runs on port 5173
 ```
 
 **ML API:**
+
 ```bash
 cd Localization-Algorithm
 pip install -r requirements.txt
@@ -86,15 +88,111 @@ uvicorn brain_api:app --reload  # Runs on port 8000
 
 ---
 
+## 💻 Local Development
+
+### Using Helper Scripts
+
+```bash
+# Start all services
+./scripts/dev-up.sh
+
+# Stop all services
+./scripts/dev-down.sh
+
+# Rebuild brain-api after ML changes
+./scripts/rebuild-brain-api.sh
+
+# Check for large files and bloat
+./scripts/check-artifacts.sh
+```
+
+### Development Workflow
+
+1. **Make code changes** in Backend/, Frontend/, or Localization-Algorithm/
+2. **Backend/Frontend:** Changes auto-reload (nodemon/Vite HMR)
+3. **ML API:** Rebuild container: `./scripts/rebuild-brain-api.sh`
+4. **Test pipeline:** Run `cd Localization-Algorithm && bash test_pipeline.sh`
+
+### View Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f brain-api
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Issue: "Cannot connect to MongoDB"**
+- Verify `MONGODB_URI` in `.env`
+- Check MongoDB Atlas network access (allow your IP or `0.0.0.0/0`)
+- Test: `mongosh "mongodb+srv://..."`
+
+**Issue: "CORS errors in browser"**
+- Verify `CORS_ORIGIN` in Backend `.env` matches frontend URL
+- Check `VITE_API_BASE_URL` in Frontend `.env`
+
+**Issue: "Brain images don't load"**
+- Check Cloudinary credentials in ML API `.env`
+- Verify Cloudinary URLs in MongoDB study records
+- Check browser console for errors
+
+**Issue: "Docker: M1 chip compatibility"**
+- ML API requires x86_64 builds
+- Add `platform: linux/amd64` to docker-compose.yml brain-api service if needed
+
+**Issue: "brain-api OOM (Out of Memory)"**
+- MNE-Python is memory-intensive
+- Increase Docker Desktop RAM (Settings → Resources → Memory → 4GB+)
+
+**Issue: "Build fails with 'layer too large'"**
+- Run `docker system prune -a` to clean build cache
+- Check that `uploads/` is empty and `.dockerignore` is present
+
+### Reset Everything
+
+```bash
+# Stop and remove all containers + volumes
+docker compose down -v
+
+# Clean Docker cache
+docker system prune -a
+
+# Rebuild from scratch
+docker compose build --no-cache
+docker compose up -d
+```
+
+---
+
 ## 🌐 Deployment
 
-**Production Stack:**
-- **Frontend** → Vercel (static build, auto-deploy from GitHub)
-- **Backend** → Render/Railway (Docker, requires MongoDB URI + env vars)
-- **ML API** → Render/Railway (Docker, requires persistent disk for `/app/uploads`, min 2GB RAM)
+**See [deploy/deployment-plan.md](deploy/deployment-plan.md) for complete deployment guide.**
+
+### Quick Overview
+
+**Option A: Single VPS (Docker Compose)**
+- Deploy all 3 services on one VPS (DigitalOcean, Linode, Hetzner)
+- Requires: 4GB RAM, 2 vCPUs, 50GB disk
+- Nginx reverse proxy for SSL + domain routing
+- Cost: ~$12-24/month
+
+**Option B: Managed Services (Recommended)**
+- Frontend → Vercel (free, auto HTTPS, CDN)
+- Backend → Render/Railway ($0-7/month)
+- ML API → Render/Railway ($7-21/month, needs 2GB RAM)
+- MongoDB → Atlas (free M0 tier)
+- Cloudinary → Free tier
+- Cost: ~$7-28/month
 
 **Required Environment Variables:**
-- See `Frontend/.env.example`, `Backend/.env.example`, `Localization-Algorithm/.env.example`
+- See `.env.example` for unified config template
 - Generate secrets: `openssl rand -hex 32`
 - MongoDB: Use Atlas free tier (M0, 512MB)
 - Cloudinary: Free tier (25GB storage/bandwidth)

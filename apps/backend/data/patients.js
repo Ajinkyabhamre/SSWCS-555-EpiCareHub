@@ -1,0 +1,266 @@
+import { patients } from "../config/mongoCollections.js";
+import { ObjectId } from "mongodb";
+import {
+  checkIsProperString,
+  isDateValid,
+  validateId,
+  checkIsProperNumber,
+  calulateAge,
+  mapGender,
+  validateEmail,
+} from "./helper.js";
+import moment from "moment";
+
+const exportedMethods = {
+  async addPaitent(firstName, lastName, dob, gender, email) {
+    firstName = checkIsProperString(firstName, "firstName");
+    lastName = checkIsProperString(lastName, "lastName");
+    dob = checkIsProperString(dob, "date of birth");
+    dob = isDateValid(dob, "date of birth");
+    email = validateEmail(email, "email");
+    checkIsProperNumber(gender, "gender");
+
+    const patientsCollection = await patients();
+
+    const existingPatient = await patientsCollection.findOne({
+      email: email,
+    });
+
+    if (existingPatient) {
+      throw new Error("A patient with the same email address already exists.");
+    }
+
+    let newPaitent = {
+      firstName: firstName,
+      lastName: lastName,
+      dob: dob,
+      gender: mapGender[gender],
+      email: email,
+      isEpilepsy: false,
+      creationDate: moment().format(),
+    };
+
+    const newInsertInformation = await patientsCollection.insertOne(newPaitent);
+
+    if (!newInsertInformation.insertedId) {
+      throw new Error("Insert failed!");
+    }
+
+    return await this.getPaitentById(
+      newInsertInformation.insertedId.toString()
+    );
+  },
+
+  async getPaitentById(id) {
+    id = validateId(id, "id");
+    const patientsCollection = await patients();
+    const patient = await patientsCollection.findOne({
+      _id: ObjectId.createFromHexString(id),
+    });
+    if (!patient) throw new Error("Error: Paitent not found");
+    patient.age = calulateAge(patient.dob);
+    return patient;
+  },
+
+  async getAllPaitents(filterObject) {
+    if (filterObject.firstName !== undefined)
+      filterObject.firstName = checkIsProperString(
+        filterObject.firstName,
+        "firstName"
+      );
+    if (filterObject.lastName !== undefined)
+      filterObject.lastName = checkIsProperString(
+        filterObject.lastName,
+        "lastName"
+      );
+    if (filterObject.dob !== undefined) {
+      filterObject.dob = checkIsProperString(filterObject.dob, "date of birth");
+      filterObject.dob = isDateValid(filterObject.dob, "date of birth");
+    }
+
+    if (filterObject.email !== undefined)
+      filterObject.email = validateEmail(filterObject.email, "email");
+
+    const patientsCollection = await patients();
+
+    let filter = {};
+
+    if (
+      filterObject.firstName ||
+      filterObject.lastName ||
+      filterObject.dob ||
+      filterObject.email
+    ) {
+      if (filterObject.firstName) filter.firstName = filterObject.firstName;
+      if (filterObject.lastName) filter.lastName = filterObject.lastName;
+      if (filterObject.dob) filter.dob = filterObject.dob;
+      if (filterObject.email) filter.email = filterObject.email;
+    }
+
+    // Retrieve patients based on the constructed filter
+    let patientsList = await patientsCollection
+      .find(filter)
+      .sort({ creationDate: -1 })
+      .toArray();
+
+    patientsList = patientsList.map((object) => {
+      object.age = calulateAge(object.dob);
+      return object;
+    });
+
+    return patientsList;
+  },
+
+  async removePatient(id) {
+    id = validateId(id, "paitent id");
+
+    const patientsCollection = await patients();
+
+    const deletionInfo = await patientsCollection.findOneAndDelete({
+      _id: ObjectId.createFromHexString(id),
+    });
+
+    if (!deletionInfo) {
+      throw new Error(`Could not delete patient with id of ${id}`);
+    }
+
+    const { _id } = deletionInfo;
+    return { _id: _id, deleted: true };
+  },
+
+  async updatePatientInfo(id, data) {
+    id = validateId(id, "patient id");
+    let updateObject = {};
+    updateObject.firstName = checkIsProperString(data.firstName, "firstName");
+    updateObject.lastName = checkIsProperString(data.lastName, "lastName");
+    updateObject.dob = checkIsProperString(data.dob, "date of birth");
+    updateObject.dob = isDateValid(data.dob, "date of birth");
+    // checkIsProperNumber(updateObject.gender, "gender");
+    updateObject.email = validateEmail(data.email);
+    updateObject.isEpilepsy = data.isEpilepsy;
+    updateObject.eegVisuals = data.eegVisuals;
+
+    if (data.comments) updateObject.comments = data.comments;
+
+    if (typeof data.gender === "number")
+      updateObject.gender = mapGender[data.gender];
+    else updateObject.gender = data.gender;
+
+    const patientsCollection = await patients();
+
+    const updatePatient = await patientsCollection.findOneAndUpdate(
+      {
+        _id: ObjectId.createFromHexString(id),
+      },
+      {
+        $set: updateObject,
+      },
+      {
+        returnDocument: "after",
+      }
+    );
+
+    if (!updatePatient) throw new Error("could not update");
+
+    updatePatient.age = calulateAge(updatePatient.dob);
+
+    return updatePatient;
+  },
+
+  async getPatientStats() {
+    const patientsCollection = await patients();
+    let patientsList = await patientsCollection.find({}).toArray();
+    if (!patientsList) throw new Error(`Internal Server Error`);
+    let res = {};
+    res.totalPatients = patientsList.length;
+    let total = 0;
+    let epilepseyCount = 0;
+    let createdDateData = {};
+    let uploadDateData = {};
+
+    for (let i = 0; i < patientsList.length; i++) {
+      if (patientsList[i].eegVisuals) {
+        for (let upload of patientsList[i].eegVisuals) {
+          if (upload.uploadDate in uploadDateData) {
+            uploadDateData[upload.uploadDate]++;
+          } else {
+            uploadDateData[upload.uploadDate] = 1;
+          }
+        }
+        total += patientsList[i].eegVisuals.length;
+      }
+      if (patientsList[i].isEpilepsy) epilepseyCount++;
+    }
+    res.totalScans = total; // Fixed typo: was 'totatScans'
+    res.epilepsyPatient = epilepseyCount;
+    res.nonEpilepsyCount = patientsList.length - epilepseyCount;
+
+    res.ageGroups = {
+      "0 - 18": 0,
+      "19 - 35": 0,
+      "36 - 50": 0,
+      "51 - 65": 0,
+      "66+": 0,
+    };
+
+    patientsList = patientsList.map((object) => {
+      object.age = calulateAge(object.dob);
+      return object;
+    });
+
+    patientsList.forEach((patient) => {
+      // Age grouping
+      if (patient.age !== undefined && patient.age !== null) {
+        if (patient.age >= 0 && patient.age <= 18) {
+          res.ageGroups["0 - 18"]++;
+        } else if (patient.age >= 19 && patient.age <= 35) {
+          res.ageGroups["19 - 35"]++;
+        } else if (patient.age >= 36 && patient.age <= 50) {
+          res.ageGroups["36 - 50"]++;
+        } else if (patient.age >= 51 && patient.age <= 65) {
+          res.ageGroups["51 - 65"]++;
+        } else {
+          res.ageGroups["66+"]++;
+        }
+      }
+
+      // Creation date grouping
+      if (patient.creationDate) {
+        let creationDate = moment(patient.creationDate).format("MM/DD/YYYY");
+
+        // Validate that moment parsing succeeded
+        if (creationDate !== "Invalid date") {
+          if (creationDate in createdDateData) {
+            createdDateData[creationDate]++;
+          } else {
+            createdDateData[creationDate] = 1;
+          }
+        } else {
+          console.warn("[Statistics] Invalid creation date for patient:", patient._id);
+        }
+      }
+    });
+
+    res.createdDateWiseData = Object.entries(createdDateData).map(
+      ([date, count]) => ({ date, value: count })
+    );
+
+    res.uploadScansDateWiseData = Object.entries(uploadDateData).map(
+      ([date, count]) => ({ date, value: count })
+    );
+
+    res.ageGroupsData = Object.entries(res.ageGroups).map(
+      ([ageGroup, number]) => ({ ageGroup, number })
+    );
+
+    // Debug logging
+    console.log("[Statistics] Total patients:", res.totalPatients);
+    console.log("[Statistics] Age groups data:", res.ageGroupsData);
+    console.log("[Statistics] Created date data entries:", res.createdDateWiseData.length);
+    console.log("[Statistics] Upload scans data entries:", res.uploadScansDateWiseData.length);
+
+    return res;
+  },
+};
+
+export default exportedMethods;

@@ -1,0 +1,81 @@
+@import url("https://fonts.googleapis.com/css2?family=Crete+Round:ital@0;1&display=swap, Lora:ital,wght@0,400..700;1,400..700");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Theme System - Using Tailwind + CSS Variables approach
+ * Tokens are semantic (not raw colors) and work with Tailwind's dark mode
+ */
+
+:root {
+  --font-crete-round: "Crete Round", serif;
+  --font-lora: "Lora", serif;
+
+  /* Light theme (default) */
+  --bg-body: #f0fdf4; /* emerald-50 */
+  --bg-card: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-nav: rgba(255, 255, 255, 0.9);
+
+  --border-subtle: #d1fae5; /* emerald-100 */
+  --border-default: #e2e8f0; /* slate-200 */
+
+  --text-primary: #0f172a; /* slate-900 */
+  --text-secondary: #475569; /* slate-600 */
+  --text-muted: #64748b; /* slate-500 */
+
+  --accent-primary: #059669; /* emerald-600 */
+  --accent-primary-hover: #047857; /* emerald-700 */
+  --accent-primary-soft: #d1fae5; /* emerald-100 */
+  --accent-danger: #ef4444; /* red-500 */
+
+  --chip-bg: #dcfce7; /* emerald-100 */
+  --chip-border: #bbf7d0; /* emerald-200 */
+  --chip-text: #047857; /* emerald-700 */
+
+  --shadow-soft: 0 18px 45px rgba(15, 118, 110, 0.08);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --radius-card: 18px;
+}
+
+[data-theme="dark"] {
+  --bg-body: #020617; /* slate-950 */
+  --bg-card: #0f172a; /* slate-900 */
+  --bg-elevated: #1e293b; /* slate-800 */
+  --bg-nav: rgba(15, 23, 42, 0.95);
+
+  --border-subtle: #1e293b; /* slate-800 */
+  --border-default: #334155; /* slate-700 */
+
+  --text-primary: #f1f5f9; /* slate-100 */
+  --text-secondary: #cbd5e1; /* slate-300 */
+  --text-muted: #94a3b8; /* slate-400 */
+
+  --accent-primary: #10b981; /* emerald-500 */
+  --accent-primary-hover: #059669; /* emerald-600 */
+  --accent-primary-soft: rgba(16, 185, 129, 0.15);
+  --accent-danger: #f87171; /* red-400 */
+
+  --chip-bg: rgba(16, 185, 129, 0.15);
+  --chip-border: rgba(16, 185, 129, 0.3);
+  --chip-text: #6ee7b7; /* emerald-300 */
+
+  --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #65a19f; /* Blue color */
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,115 @@
+import { Router } from "express";
+const router = Router();
+import { userData } from "../data/index.js";
+import {
+  checkIsProperString,
+  isDateValid,
+  checkIsProperUsername,
+  checkPassword,
+  validateEmail,
+} from "../data/helper.js";
+
+router
+  .route("/register")
+  .get(async (req, res) => {
+    return res.send("GET request to http://localhost:3000/users");
+  })
+  .post(async (req, res) => {
+    try {
+      req.body.firstName = checkIsProperString(req.body.firstName, "firstName");
+      req.body.lastName = checkIsProperString(req.body.lastName, "lastName");
+      req.body.username = checkIsProperUsername(req.body.username);
+      req.body.email = validateEmail(req.body.email);
+      req.body.password = checkPassword(req.body.password);
+    } catch (error) {
+      return res.status(400).json({ isSuccess: false, message: error.message });
+    }
+
+    // Extract userType and adminSecret from request body
+    const { userType, secretKey: adminSecret } = req.body;
+    const adminSecretEnv = process.env.ADMIN_REGISTRATION_SECRET;
+
+    // Admin secret validation for administrator registration
+    if (userType === "admin") {
+      if (!adminSecret) {
+        return res.status(400).json({
+          isSuccess: false,
+          message: "Admin secret key is required for administrator registration.",
+        });
+      }
+
+      if (adminSecret !== adminSecretEnv) {
+        return res.status(400).json({
+          isSuccess: false,
+          message: "Invalid admin secret key.",
+        });
+      }
+    }
+
+    try {
+      const addUser = await userData.addUser(
+        req.body.firstName,
+        req.body.lastName,
+        req.body.username,
+        req.body.email,
+        req.body.password,
+        userType || "user"
+      );
+
+      if (!addUser.signUpCompleted) throw new Error("Internal Server Error");
+
+      return res
+        .status(201)
+        .json({ isSuccess: true, message: "User added Succesfully" });
+    } catch (error) {
+      const result = {
+        userAdded: null,
+        message: error.message,
+        success: false,
+      };
+      return res.status(400).json(result);
+    }
+  });
+
+router.route("/login").post(async (req, res) => {
+  let loginData = req.body;
+  if (!req.body) return res.status(400).json({ error: "No data passed" });
+  try {
+    loginData.email = validateEmail(loginData.email);
+    loginData.password = checkPassword(loginData.password);
+  } catch (error) {
+    return res.status(400).json({ isSuccess: false, error: error.message });
+  }
+
+  try {
+    const loginUser = await userData.loginUserByEmail(
+      loginData.email,
+      loginData.password
+    );
+
+    req.session.user = loginUser;
+    return res
+      .status(200)
+      .json({
+        isSuccess: true,
+        message: "logged in successfully",
+        user: {
+          id: loginUser._id,
+          name: `${loginUser.firstName} ${loginUser.lastName}`,
+          email: loginUser.email,
+          userType: loginUser.userType
+        }
+      });
+  } catch (error) {
+    return res.status(401).json({ isSuccess: false, error: error.message });
+  }
+});
+
+router.route("/logout").post(async (req, res) => {
+  if (req.session.user) {
+    req.session.destroy();
+    return res.json({ isSuccess: true, message: "Logout Successfull" });
+  }
+});
+
+export default router;

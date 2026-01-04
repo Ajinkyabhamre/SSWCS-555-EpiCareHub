@@ -113,8 +113,10 @@ const activityToColor = (activity, isHotspot) => {
  * Brain Mesh Component - Loads and renders both hemispheres
  */
 function BrainMesh({ opacity, onBrainLoaded, brainGroupRef }) {
-  const lh = useLoader(OBJLoader, "/models/brain_lh.obj");
-  const rh = useLoader(OBJLoader, "/models/brain_rh.obj");
+  // Load brain models from configurable base URL (CDN or local)
+  const BRAIN_MODELS_BASE_URL = import.meta.env.VITE_BRAIN_MODELS_BASE_URL || "/models";
+  const lh = useLoader(OBJLoader, `${BRAIN_MODELS_BASE_URL}/brain_lh.obj`);
+  const rh = useLoader(OBJLoader, `${BRAIN_MODELS_BASE_URL}/brain_rh.obj`);
 
   const brainGroup = useMemo(() => {
 

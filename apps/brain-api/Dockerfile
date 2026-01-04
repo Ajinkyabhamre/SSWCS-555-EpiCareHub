@@ -1,9 +1,29 @@
-# Localization-Algorithm Dockerfile - Python/FastAPI with MNE
+# ============================================
+# STAGE 1: Builder - Compile Python packages
+# ============================================
+FROM python:3.11-slim AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install to /install directory
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ============================================
+# STAGE 2: Runtime - Final minimal image
+# ============================================
 FROM python:3.11-slim
 
-# Install system dependencies required by MNE, NumPy, and Matplotlib
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# Install ONLY runtime dependencies (no build tools)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libgl1 \
     libgomp1 \
@@ -16,9 +36,8 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements first for better layer caching
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy installed packages from builder stage
+COPY --from=builder /install /usr/local
 
 # Copy application code
 COPY . .

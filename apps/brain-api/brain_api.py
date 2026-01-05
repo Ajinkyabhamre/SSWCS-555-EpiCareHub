@@ -21,6 +21,7 @@ PORT = int(os.environ.get("PORT", 8000))
 FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
 BACKEND_ORIGIN = os.environ.get("BACKEND_ORIGIN", "http://localhost:3000")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "50"))  # Default 50MB max upload
 
 # Configure logging
 logging.basicConfig(
@@ -109,23 +110,35 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS middleware
-origins = [
-    "http://localhost",
-    FRONTEND_ORIGIN,
-    BACKEND_ORIGIN,
-]
+# Configure CORS middleware with env-based origin whitelist
+# Support comma-separated ALLOWED_ORIGINS or fall back to individual env vars
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+else:
+    # Fallback to legacy env vars
+    origins = [
+        "http://localhost",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        FRONTEND_ORIGIN,
+        BACKEND_ORIGIN,
+    ]
+    # Remove duplicates
+    origins = list(set(origins))
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "x-epicare-key"],
+    expose_headers=["*"],
 )
 
 logger.info("FastAPI service initialized")
-logger.info(f"Allowed origins: {origins}")
+logger.info(f"Allowed CORS origins: {origins}")
+logger.info(f"Max upload size: {MAX_UPLOAD_MB}MB")
 
 
 @app.get("/health")
@@ -148,10 +161,13 @@ async def global_exception_handler(request: Request, exc: Exception):
     """
     Global exception handler to catch all unhandled exceptions.
     Logs full traceback without exposing sensitive information.
+    CORS headers are automatically added by CORSMiddleware.
     """
+    request_id = str(uuid.uuid4())
     logger.exception(
-        f"Unhandled exception in {request.method} {request.url.path}",
+        f"Unhandled exception in {request.method} {request.url.path} [request_id={request_id}]",
         extra={
+            "request_id": request_id,
             "method": request.method,
             "url": str(request.url),
             "client": request.client.host if request.client else "unknown"
@@ -162,7 +178,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={
             "error": "Internal Server Error",
             "message": "An unexpected error occurred",
-            "path": request.url.path
+            "path": request.url.path,
+            "request_id": request_id
         }
     )
 
@@ -172,42 +189,74 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
     """
     Main endpoint for EEG brain visualization.
     Accepts uploaded EEG file (.fif, .h5, .mat) and runs the ML pipeline.
+
+    Max upload size: configurable via MAX_UPLOAD_MB env var (default 50MB)
     """
+    import time
+    start_time = time.time()
     uploadId_for_error = None
+    request_id = str(uuid.uuid4())
+
     try:
         # Generate or use provided uploadId
         if uploadId:
-            logger.info(f"[REQUEST] /visualize_brain - Using provided uploadId: {uploadId}")
+            logger.info(f"[REQUEST:{request_id}] /visualize_brain - Using provided uploadId: {uploadId}")
         else:
             uploadId = str(uuid.uuid4())
-            logger.info(f"[REQUEST] /visualize_brain - Generated new uploadId: {uploadId}")
+            logger.info(f"[REQUEST:{request_id}] /visualize_brain - Generated new uploadId: {uploadId}")
 
         uploadId_for_error = uploadId
 
-        # Log file details for debugging
-        file_size = 0
+        # Check file size BEFORE reading into memory
+        file_size_bytes = 0
         if file.file:
             file.file.seek(0, 2)  # Seek to end
-            file_size = file.file.tell()
+            file_size_bytes = file.file.tell()
             file.file.seek(0)  # Reset to beginning
 
+        file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
+        max_size_bytes = MAX_UPLOAD_MB * 1024 * 1024
+
         logger.info(
-            f"[REQUEST] File upload details: patientId={patientId}, filename={file.filename}, "
-            f"size={round(file_size / (1024 * 1024), 2)}MB"
+            f"[REQUEST:{request_id}] File upload - patientId={patientId}, filename={file.filename}, "
+            f"content_type={file.content_type}, size={file_size_mb}MB (max={MAX_UPLOAD_MB}MB)"
         )
+
+        # Validate file size
+        if file_size_bytes > max_size_bytes:
+            logger.warning(
+                f"[REQUEST:{request_id}] File too large: {file_size_mb}MB exceeds {MAX_UPLOAD_MB}MB limit"
+            )
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "error": "File too large",
+                    "message": f"Upload size {file_size_mb}MB exceeds maximum allowed size",
+                    "max_mb": MAX_UPLOAD_MB,
+                    "received_bytes": file_size_bytes,
+                    "received_mb": file_size_mb,
+                    "request_id": request_id,
+                    "recommendation": "For large files, consider uploading directly to object storage and providing a URL"
+                }
+            )
 
         # Use path utilities
         upload_dir = ensure_upload_dir(uploadId)
-        logger.info(f"[REQUEST] Upload directory: {upload_dir}")
+        logger.info(f"[REQUEST:{request_id}] Upload directory: {upload_dir}")
 
         # Save uploaded file
+        save_start = time.time()
         upload_path = os.path.join(upload_dir, file.filename)
-        logger.info(f"[REQUEST] Saving file to: {upload_path}")
+        logger.info(f"[REQUEST:{request_id}] Saving file to: {upload_path}")
 
         with open(upload_path, "wb") as f:
             f.write(file.file.read())
 
-        logger.info(f"[PIPELINE] Starting brain_visualizer.py for uploadId: {uploadId}")
+        save_duration = time.time() - save_start
+        logger.info(f"[TIMING:{request_id}] File saved in {save_duration:.2f}s")
+
+        pipeline_start = time.time()
+        logger.info(f"[PIPELINE:{request_id}] Starting brain_visualizer.py for uploadId: {uploadId}")
 
         # Run brain visualizer subprocess with timeout and stderr capture
         result = subprocess.run(
@@ -225,13 +274,17 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
             cwd="/app"  # Explicit working directory
         )
 
-        logger.info(f"[PIPELINE] brain_visualizer.py completed with return code: {result.returncode}")
+        pipeline_duration = time.time() - pipeline_start
+        logger.info(
+            f"[PIPELINE:{request_id}] brain_visualizer.py completed in {pipeline_duration:.2f}s "
+            f"with return code: {result.returncode}"
+        )
 
         # Log last 2000 chars of stdout/stderr for debugging
         if result.stdout:
-            logger.debug(f"[PIPELINE] STDOUT (last 2000 chars): {result.stdout[-2000:]}")
+            logger.debug(f"[PIPELINE:{request_id}] STDOUT (last 2000 chars): {result.stdout[-2000:]}")
         if result.stderr:
-            logger.warning(f"[PIPELINE] STDERR (last 2000 chars): {result.stderr[-2000:]}")
+            logger.warning(f"[PIPELINE:{request_id}] STDERR (last 2000 chars): {result.stderr[-2000:]}")
 
         # Check for output.json in the CORRECT location (upload directory)
         try:
@@ -239,7 +292,7 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
 
             # Check if output contains error
             if "error" in data:
-                logger.error(f"[PIPELINE] Processing failed: {data['error']}")
+                logger.error(f"[PIPELINE:{request_id}] Processing failed: {data['error']}")
                 # Still write the error to output.json for inspection
                 return JSONResponse(
                     status_code=500,
@@ -247,25 +300,42 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
                         "error": "Pipeline processing failed",
                         "message": str(data.get("error", "Unknown error")),
                         "uploadId": uploadId,
+                        "request_id": request_id,
                         "details": data.get("traceback", "No traceback available")
                     }
                 )
 
-            logger.info(f"[PIPELINE] Processing complete for uploadId: {uploadId}")
+            total_duration = time.time() - start_time
+            logger.info(
+                f"[SUCCESS:{request_id}] Processing complete for uploadId: {uploadId} "
+                f"in {total_duration:.2f}s total"
+            )
             return JSONResponse(
-                content={"message": "Brain visualization complete", "data": data},
+                content={
+                    "message": "Brain visualization complete",
+                    "data": data,
+                    "request_id": request_id,
+                    "timing": {
+                        "total_seconds": round(total_duration, 2),
+                        "pipeline_seconds": round(pipeline_duration, 2),
+                        "save_seconds": round(save_duration, 2)
+                    }
+                },
                 status_code=status.HTTP_200_OK
             )
 
         except FileNotFoundError as e:
-            logger.error(f"[PIPELINE] output.json not found at expected path: {get_output_json_path(uploadId)}")
-            logger.error(f"[PIPELINE] Return code: {result.returncode}")
-            logger.error(f"[PIPELINE] STDERR: {result.stderr}")
+            logger.error(
+                f"[ERROR:{request_id}] output.json not found at: {get_output_json_path(uploadId)}"
+            )
+            logger.error(f"[ERROR:{request_id}] Return code: {result.returncode}")
+            logger.error(f"[ERROR:{request_id}] STDERR: {result.stderr}")
 
             # Write error output.json ourselves
             error_data = {
                 "error": "Pipeline did not produce output.json",
                 "uploadId": uploadId,
+                "request_id": request_id,
                 "returncode": result.returncode,
                 "stderr": result.stderr[-2000:] if result.stderr else "",
                 "stdout": result.stdout[-2000:] if result.stdout else ""
@@ -278,14 +348,15 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
                     "error": "Pipeline did not produce output",
                     "message": "brain_visualizer.py did not create output.json",
                     "uploadId": uploadId,
+                    "request_id": request_id,
                     "returncode": result.returncode
                 }
             )
 
     except subprocess.TimeoutExpired as e:
         logger.error(
-            f"[PIPELINE] Timeout after 180 seconds for uploadId: {uploadId_for_error}",
-            extra={"uploadId": uploadId_for_error, "patientId": patientId}
+            f"[TIMEOUT:{request_id}] Pipeline timeout after 180 seconds for uploadId: {uploadId_for_error}",
+            extra={"uploadId": uploadId_for_error, "patientId": patientId, "request_id": request_id}
         )
 
         # Write timeout error to output.json
@@ -293,6 +364,7 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
             timeout_data = {
                 "error": "Pipeline timeout after 180 seconds",
                 "uploadId": uploadId_for_error,
+                "request_id": request_id,
                 "stdout": e.stdout[-2000:] if e.stdout else "",
                 "stderr": e.stderr[-2000:] if e.stderr else ""
             }
@@ -306,26 +378,30 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
             content={
                 "error": "Pipeline timeout",
                 "message": "Processing exceeded 180 second limit",
-                "uploadId": uploadId_for_error
+                "uploadId": uploadId_for_error,
+                "request_id": request_id
             }
         )
 
     except Exception as e:
         logger.exception(
-            "[PIPELINE] visualize_brain failed",
+            f"[EXCEPTION:{request_id}] visualize_brain failed",
             extra={
                 "uploadId": uploadId_for_error,
                 "patientId": patientId,
-                "upload_filename": file.filename if file else None
+                "upload_filename": file.filename if file else None,
+                "request_id": request_id
             }
         )
 
         # Write exception to output.json
         if uploadId_for_error:
+            import traceback
             error_data = {
                 "error": str(e),
                 "uploadId": uploadId_for_error,
-                "traceback": str(e.__traceback__)
+                "request_id": request_id,
+                "traceback": traceback.format_exc()
             }
             try:
                 write_output_json(uploadId_for_error, error_data)
@@ -337,7 +413,8 @@ async def visualize_brain(file: UploadFile = File(...), patientId: str = Form(..
             content={
                 "error": "Internal Server Error",
                 "message": str(e),
-                "uploadId": uploadId_for_error
+                "uploadId": uploadId_for_error,
+                "request_id": request_id
             }
         )
 

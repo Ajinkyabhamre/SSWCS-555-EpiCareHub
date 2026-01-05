@@ -29,6 +29,43 @@ if (missingEnvVars.length > 0) {
 
 const app = express();
 
+// Trust proxy for Railway deployment (required for HTTPS/secure cookies behind proxy)
+app.set("trust proxy", 1);
+
+// CORS Configuration - Environment-based origin whitelist
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+// Add localhost default for development if no origins configured
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push("http://localhost:5173");
+}
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (server-to-server, mobile apps, curl, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+    // Allow if origin is in the whitelist
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    // Reject other origins
+    callback(new Error(`CORS policy does not allow access from origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options("*", cors(corsOptions));
+
 app.use(
   session({
     name: "AuthenticationSession",
@@ -44,16 +81,6 @@ app.use(
   })
 );
 
-// CORS Configuration - Environment-based origin whitelist
-const corsOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['http://localhost:5173'];
-
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true
-}));
-
 // Body parser with size limits to prevent abuse
 app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }));
 app.use(bodyParser.json({ limit: '2mb' }));
@@ -63,7 +90,7 @@ const uploadMaxMB = parseInt(process.env.UPLOAD_MAX_MB || '100', 10);
 app.use(fileUpload({
   limits: { fileSize: uploadMaxMB * 1024 * 1024 },
   abortOnLimit: true,
-  limitHandler: (req, res) => {
+  limitHandler: (_req, res) => {
     res.status(413).json({
       error: `File too large. Maximum size is ${uploadMaxMB}MB. Consider uploading to object storage directly.`
     });

@@ -174,6 +174,8 @@ apps/brain-api/data/**/*.h5
 
 # Large brain models (hosted on CDN)
 apps/frontend/public/models/*.obj
+!apps/frontend/public/models/brain_lh.obj
+!apps/frontend/public/models/brain_rh.obj
 apps/frontend/public/models/*.gltf
 apps/frontend/public/obj/*.obj
 apps/frontend/public/obj/*.gltf

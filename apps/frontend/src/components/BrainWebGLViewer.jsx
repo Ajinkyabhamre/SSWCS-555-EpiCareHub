@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unknown-property */
-import { useEffect, useState, useMemo, useRef, Suspense, useCallback } from "react";
+import { useEffect, useState, useMemo, useRef, Suspense, useCallback, Component } from "react";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -114,9 +114,23 @@ const activityToColor = (activity, isHotspot) => {
  */
 function BrainMesh({ opacity, onBrainLoaded, brainGroupRef }) {
   // Load brain models from configurable base URL (CDN or local)
-  const BRAIN_MODELS_BASE_URL = import.meta.env.VITE_BRAIN_MODELS_BASE_URL || "/models";
-  const lh = useLoader(OBJLoader, `${BRAIN_MODELS_BASE_URL}/brain_lh.obj`);
-  const rh = useLoader(OBJLoader, `${BRAIN_MODELS_BASE_URL}/brain_rh.obj`);
+  // Priority: Use env var ONLY if explicitly set and non-empty, otherwise use local /models
+  const envBaseUrl = import.meta.env.VITE_BRAIN_MODELS_BASE_URL;
+  const BRAIN_MODELS_BASE_URL = (envBaseUrl && envBaseUrl.trim() !== "") ? envBaseUrl : "/models";
+
+  const lhUrl = `${BRAIN_MODELS_BASE_URL}/brain_lh.obj`;
+  const rhUrl = `${BRAIN_MODELS_BASE_URL}/brain_rh.obj`;
+
+  // Log resolved URLs in development mode only
+  if (import.meta.env.DEV) {
+    console.log("[3D Brain] Model URLs resolved:");
+    console.log("  - Left hemisphere:", lhUrl);
+    console.log("  - Right hemisphere:", rhUrl);
+    console.log("  - Source:", envBaseUrl ? "VITE_BRAIN_MODELS_BASE_URL" : "local /models (default)");
+  }
+
+  const lh = useLoader(OBJLoader, lhUrl);
+  const rh = useLoader(OBJLoader, rhUrl);
 
   const brainGroup = useMemo(() => {
 
@@ -402,6 +416,67 @@ function DebugHelpers({ brainBounds, electrodeBounds }) {
 DebugHelpers.propTypes = {
   brainBounds: PropTypes.object,
   electrodeBounds: PropTypes.object,
+};
+
+/**
+ * Error Boundary for 3D Brain Model Loading
+ * Catches errors from BrainMesh (e.g., 404 on model files) and displays user-friendly fallback
+ */
+class BrainModelErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorMessage: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, errorMessage: error.message };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("[3D Brain] Model loading failed:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Html center>
+          <div style={{
+            color: '#ef4444',
+            backgroundColor: '#1e293b',
+            padding: '20px',
+            borderRadius: '8px',
+            border: '1px solid #ef4444',
+            maxWidth: '400px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+              3D Brain Model Failed to Load
+            </div>
+            <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
+              Please refresh the page or try again later.
+            </div>
+            {import.meta.env.DEV && this.state.errorMessage && (
+              <div style={{
+                fontSize: '12px',
+                color: '#94a3b8',
+                marginTop: '12px',
+                fontFamily: 'monospace',
+                wordBreak: 'break-word'
+              }}>
+                Error: {this.state.errorMessage}
+              </div>
+            )}
+          </div>
+        </Html>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+BrainModelErrorBoundary.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 // ============================================================================
@@ -806,11 +881,13 @@ const BrainWebGLViewer = ({ uploadId, study }) => {
 
           {/* 3D Content */}
           <Suspense fallback={<Html center>Loading brain mesh...</Html>}>
-            <BrainMesh
-              opacity={brainOpacity}
-              onBrainLoaded={handleBrainLoaded}
-              brainGroupRef={brainGroupRef}
-            />
+            <BrainModelErrorBoundary>
+              <BrainMesh
+                opacity={brainOpacity}
+                onBrainLoaded={handleBrainLoaded}
+                brainGroupRef={brainGroupRef}
+              />
+            </BrainModelErrorBoundary>
             {visibleElectrodes.length > 0 && brainBounds && (
               <ElectrodePoints
                 points={visibleElectrodes}

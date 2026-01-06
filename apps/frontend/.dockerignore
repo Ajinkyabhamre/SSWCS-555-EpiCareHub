@@ -53,7 +53,3 @@ logs/
 *.temp
 temp/
 tmp/
-
-# Brain models (loaded from CDN at runtime, not bundled)
-public/models/
-public/obj/

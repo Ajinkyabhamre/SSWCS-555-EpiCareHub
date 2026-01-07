@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import { apiClient } from '../utils/api';
 
 const Signin = () => {
   const [email, setEmail] = useState('');
@@ -56,8 +56,8 @@ const Signin = () => {
     setIsSubmitting(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await axios.post(`${apiUrl}/login`, {
+      // Using apiClient ensures withCredentials: true for session cookies
+      const response = await apiClient.post('/login', {
         email: email,
         password: password
       });

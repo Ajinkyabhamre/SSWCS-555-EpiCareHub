@@ -6,6 +6,7 @@ import studiesRoutes from "./studies.js";
 import devRoutes from "./dev.js";
 import debugRoutes from "./debug.js";
 import analysisRoutes from "./analysis.js";
+import authRoutes from "./auth.js";
 import { Router } from "express";
 
 const constructorMethod = (app) => {
@@ -18,6 +19,9 @@ const constructorMethod = (app) => {
   // - /patients/:patientId/studies (patient-specific study routes)
   // - /studies/:studyId (study-specific routes)
   app.use("/", studiesRoutes);
+
+  // Auth diagnostic routes (always available for session debugging)
+  app.use("/auth", authRoutes);
 
   // Analysis routes for triggering Python pipelines
   app.use("/api/analysis", analysisRoutes);

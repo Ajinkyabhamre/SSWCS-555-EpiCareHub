@@ -7,6 +7,7 @@ import express from "express";
 import cors from "cors";
 import configRoutesFunction from "./routes/index.js";
 import session from "express-session";
+import MongoStore from "connect-mongo";
 import fileUpload from "express-fileupload";
 import bodyParser from "body-parser";
 
@@ -66,20 +67,37 @@ app.use(cors(corsOptions));
 // Handle preflight requests for all routes
 app.options("*", cors(corsOptions));
 
-app.use(
-  session({
-    name: "AuthenticationSession",
-    secret: process.env.SESSION_SECRET || "change_me_in_production",
-    saveUninitialized: false,
-    resave: false,
-    cookie: {
-      httpOnly: true, // Prevent XSS attacks
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production, false in dev
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'lax' for dev, 'none' for prod with HTTPS
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    },
-  })
-);
+// Session store configuration
+// In production, use MongoStore for persistence across restarts
+// In development/test, fall back to MemoryStore for simplicity
+const sessionConfig = {
+  name: "AuthenticationSession",
+  secret: process.env.SESSION_SECRET || "change_me_in_production",
+  saveUninitialized: false,
+  resave: false,
+  cookie: {
+    httpOnly: true, // Prevent XSS attacks
+    secure: process.env.NODE_ENV === "production", // HTTPS only in production, false in dev
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'lax' for dev, 'none' for prod with HTTPS
+    maxAge: 1000 * 60 * 60 * 24, // 24 hours
+  },
+};
+
+// Use MongoDB session store in production for persistence across Railway restarts
+if (process.env.NODE_ENV === "production" && process.env.MONGODB_URI) {
+  sessionConfig.store = MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: "sessions",
+    ttl: 60 * 60 * 24, // 24 hours (same as cookie maxAge)
+    autoRemove: "native", // Use MongoDB TTL index for session cleanup
+    touchAfter: 24 * 3600, // Lazy session update (only update once per 24h unless data changes)
+  });
+  console.log("[Session] Using MongoDB session store for production persistence");
+} else {
+  console.log("[Session] Using MemoryStore (dev/test mode - sessions lost on restart)");
+}
+
+app.use(session(sessionConfig));
 
 // Body parser with size limits to prevent abuse
 app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }));

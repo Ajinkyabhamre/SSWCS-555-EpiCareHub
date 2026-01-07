@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Dialog } from 'primereact/dialog';
 import { motion } from 'framer-motion';
+import { apiClient } from '../utils/api';
 
 const AdminPage = () => {
   const [users, setUsers] = useState([]);
@@ -16,8 +16,8 @@ const AdminPage = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const response = await axios.get(`${apiUrl}/usersDetails`);
+        // Using apiClient ensures withCredentials: true for session cookies
+        const response = await apiClient.get('/usersDetails');
         setUsers(response.data);
       } catch (error) {
         console.error('There was an error fetching the users:', error);
@@ -61,8 +61,8 @@ const AdminPage = () => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      await axios.delete(`${apiUrl}/usersDetails/${id}`);
+      // Using apiClient ensures withCredentials: true for session cookies
+      await apiClient.delete(`/usersDetails/${id}`);
       setUsers(users.filter(user => user._id !== id));
     } catch (error) {
       console.error('There was an error deleting the user:', error);
@@ -73,8 +73,8 @@ const AdminPage = () => {
   const handleUserUpdate = async () => {
     try {
       const { _id, ...updatePayload } = selectedUser;
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await axios.put(`${apiUrl}/usersDetails/${_id}`, updatePayload);
+      // Using apiClient ensures withCredentials: true for session cookies
+      const response = await apiClient.put(`/usersDetails/${_id}`, updatePayload);
 
       if (response.data.success) {
         setUsers(users.map(user => user._id === _id ? { ...user, ...updatePayload } : user));

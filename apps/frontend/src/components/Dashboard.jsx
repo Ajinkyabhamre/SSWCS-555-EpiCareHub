@@ -1,5 +1,5 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
+import { apiClient } from "../utils/api";
 import {
   BarChart,
   Bar,
@@ -37,16 +37,10 @@ const Dashboard = () => {
   const fetchData = () => {
     setLoading(true);
     setError(null);
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-    let config = {
-      method: "get",
-      maxBodyLength: Infinity,
-      url: `${apiUrl}/patients/statistics`,
-      headers: {},
-    };
 
-    axios
-      .request(config)
+    // Using apiClient ensures withCredentials: true for session cookies
+    apiClient
+      .get('/patients/statistics')
       .then((response) => {
         const tempData = response.data;
 

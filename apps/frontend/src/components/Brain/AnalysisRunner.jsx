@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import axios from "axios";
+import { apiClient } from "../../utils/api";
 
 /**
  * AnalysisRunner Component
@@ -28,13 +28,12 @@ const AnalysisRunner = ({ patientId, onAnalysisComplete }) => {
   const [progress, setProgress] = useState(null);
   const [pollInterval, setPollInterval] = useState(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
   // Fetch available datasets on mount
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/analysis/datasets`);
+        // Using apiClient ensures withCredentials: true for session cookies
+        const response = await apiClient.get('/api/analysis/datasets');
         if (response.data.success) {
           setDatasets(response.data.datasets);
           // Auto-select the first validated dataset
@@ -50,7 +49,7 @@ const AnalysisRunner = ({ patientId, onAnalysisComplete }) => {
     };
 
     fetchDatasets();
-  }, [API_BASE_URL]);
+  }, []);
 
   // Cleanup poll interval on unmount
   useEffect(() => {
@@ -87,7 +86,8 @@ const AnalysisRunner = ({ patientId, onAnalysisComplete }) => {
 
     try {
       // Step 1: Call backend to start Python pipeline
-      const response = await axios.post(`${API_BASE_URL}/api/analysis/run-human-mtl`, {
+      // Using apiClient ensures withCredentials: true for session cookies
+      const response = await apiClient.post('/api/analysis/run-human-mtl', {
         patientId,
         uploadId,
         sessionKey: selectedDataset
@@ -124,7 +124,8 @@ const AnalysisRunner = ({ patientId, onAnalysisComplete }) => {
 
       try {
         // Fetch all studies for this patient
-        const response = await axios.get(`${API_BASE_URL}/patients/${patientId}/studies`);
+        // Using apiClient ensures withCredentials: true for session cookies
+        const response = await apiClient.get(`/patients/${patientId}/studies`);
 
         if (!response.data.success) {
           throw new Error("Failed to fetch studies");

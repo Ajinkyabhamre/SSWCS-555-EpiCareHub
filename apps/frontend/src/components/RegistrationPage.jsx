@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { apiClient } from '../utils/api';
 
 const UserInput = () => {
   // NOTE: Secret key validation must be done on backend, never expose secrets in frontend
@@ -200,8 +200,8 @@ const UserInput = () => {
         secretKey: formData.secretKey,
       };
 
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await axios.post(`${apiUrl}/register`, submitData);
+      // Using apiClient ensures withCredentials: true for session cookies
+      const response = await apiClient.post('/register', submitData);
 
       setSuccessMessage('Registration successful! Redirecting to sign in...');
 

@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient, pythonApiClient } from "../utils/api";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Dialog } from "primereact/dialog";
@@ -78,18 +78,9 @@ const PatientDetails = () => {
       patient.isEpilepsy = isEpilepsy;
       patient.comments = comments;
 
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      let submitConfig = {
-        method: "put",
-        maxBodyLength: Infinity,
-        url: `${apiUrl}/patients/`,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: patient,
-      };
-      axios
-        .request(submitConfig)
+      // Using apiClient ensures withCredentials: true for session cookies
+      apiClient
+        .put('/patients/', patient)
         .then((response) => {
           if (!response.data.success) {
             throw response.data.message || "Error";
@@ -140,10 +131,9 @@ const PatientDetails = () => {
     setVisible(false);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-      const studyResponse = await axios.post(
-        `${apiUrl}/patients/${patientId}/studies`,
+      // Using apiClient ensures withCredentials: true for session cookies
+      const studyResponse = await apiClient.post(
+        `/patients/${patientId}/studies`,
         {
           title: "Baseline EEG",
           status: "PROCESSING",
@@ -159,7 +149,6 @@ const PatientDetails = () => {
         uploadId: uploadId,
       }));
 
-      const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
       const endpoint = devMode ? "/visualize_brain_dev" : "/visualize_brain";
 
       const formData = new FormData();
@@ -180,15 +169,14 @@ const PatientDetails = () => {
         }
       }, devMode ? 500 : 3000);
 
-      await axios.post(`${pythonApiUrl}${endpoint}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // Note: pythonApiClient has withCredentials: true for session cookies
+      await pythonApiClient.post(endpoint, formData);
 
       clearInterval(stepIntervalRef.current);
 
       pollingIntervalRef.current = setInterval(async () => {
         try {
-          const studiesResponse = await axios.get(`${apiUrl}/patients/${patientId}/studies`);
+          const studiesResponse = await apiClient.get(`/patients/${patientId}/studies`);
 
           if (studiesResponse.data.success && studiesResponse.data.studies) {
             const matchingStudy = studiesResponse.data.studies.find(
@@ -216,7 +204,7 @@ const PatientDetails = () => {
                     devMode: false,
                   });
 
-                  const patientResponse = await axios.get(`${apiUrl}/patients/${id}`);
+                  const patientResponse = await apiClient.get(`/patients/${id}`);
                   setPatient(patientResponse.data);
                   const tempPatient = patientResponse.data;
                   setIsEpilepsy(tempPatient.isEpilepsy);
@@ -234,7 +222,7 @@ const PatientDetails = () => {
                     );
                   }
 
-                  const studiesResponse2 = await axios.get(`${apiUrl}/patients/${id}/studies`);
+                  const studiesResponse2 = await apiClient.get(`/patients/${id}/studies`);
                   if (studiesResponse2.data.success && studiesResponse2.data.studies) {
                     setStudies(studiesResponse2.data.studies);
                   }
@@ -297,16 +285,9 @@ const PatientDetails = () => {
   );
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-    let config = {
-      method: "get",
-      maxBodyLength: Infinity,
-      url: `${apiUrl}/patients/${id}`,
-      headers: {},
-    };
-    axios
-      .request(config)
+    // Using apiClient ensures withCredentials: true for session cookies
+    apiClient
+      .get(`/patients/${id}`)
       .then((response) => {
         setPatient(response.data);
         const tempPatient = response.data;
@@ -325,8 +306,8 @@ const PatientDetails = () => {
       })
       .catch(() => {});
 
-    axios
-      .get(`${apiUrl}/patients/${id}/studies`)
+    apiClient
+      .get(`/patients/${id}/studies`)
       .then((response) => {
         if (response.data.success && response.data.studies) {
           setStudies(response.data.studies);
@@ -513,9 +494,9 @@ const PatientDetails = () => {
             patient={patient}
             study={selectedStudyForViewer}
             onAnalysisComplete={() => {
-              const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-              axios
-                .get(`${apiUrl}/patients/${id}/studies`)
+              // Using apiClient ensures withCredentials: true for session cookies
+              apiClient
+                .get(`/patients/${id}/studies`)
                 .then((response) => {
                   if (response.data.success && response.data.studies) {
                     setStudies(response.data.studies);

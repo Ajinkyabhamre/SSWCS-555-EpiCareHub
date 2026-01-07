@@ -5,7 +5,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import CustomDataTable from "./CustomDataTable";
 import { Dialog } from "primereact/dialog";
 import { ConfirmDialog } from "primereact/confirmdialog";
-import axios from "axios";
+import { apiClient, pythonApiClient } from "../utils/api";
 import PatientForm from "./PatientForm";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -81,11 +81,9 @@ const Patients = () => {
       // ====================================================
       // STEP 1: Create study in Node backend first
       // ====================================================
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
       console.log("[PHASE 6] Creating study record...");
-      const studyResponse = await axios.post(
-        `${apiUrl}/patients/${patientId}/studies`,
+      const studyResponse = await apiClient.post(
+        `/patients/${patientId}/studies`,
         {
           title: "Baseline EEG",
           status: "PROCESSING",
@@ -107,7 +105,6 @@ const Patients = () => {
       // ====================================================
       // STEP 2: Call Python with uploadId
       // ====================================================
-      const pythonApiUrl = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
       const endpoint = devMode ? "/visualize_brain_dev" : "/visualize_brain";
 
       if (devMode) {
@@ -137,9 +134,8 @@ const Patients = () => {
       }, devMode ? 500 : 3000); // Faster in dev mode
 
       // Call Python endpoint (async, Python will callback to Node)
-      await axios.post(`${pythonApiUrl}${endpoint}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // Note: pythonApiClient has withCredentials: true for session cookies
+      await pythonApiClient.post(endpoint, formData);
 
       clearInterval(stepIntervalRef.current);
 
@@ -150,7 +146,7 @@ const Patients = () => {
       // ====================================================
       pollingIntervalRef.current = setInterval(async () => {
         try {
-          const studiesResponse = await axios.get(`${apiUrl}/patients/${patientId}/studies`);
+          const studiesResponse = await apiClient.get(`/patients/${patientId}/studies`);
 
           if (studiesResponse.data.success && studiesResponse.data.studies) {
             const matchingStudy = studiesResponse.data.studies.find(
@@ -237,19 +233,12 @@ const Patients = () => {
   };
 
   const fetchData = () => {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-    let config = {
-      method: "post",
-      maxBodyLength: Infinity,
-      url: `${apiUrl}/patients/get`,
-      headers: {},
-    };
-
     setLoading(true);
     setError(null);
 
-    axios
-      .request(config)
+    // Using apiClient ensures withCredentials: true for session cookies
+    apiClient
+      .post('/patients/get')
       .then((response) => {
         setData(response.data);
       })
@@ -274,28 +263,12 @@ const Patients = () => {
 
   const handleSubmit = useCallback(
     (patient) => {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      let submitConfig = selectedPatient
-        ? {
-            method: "put",
-            maxBodyLength: Infinity,
-            url: `${apiUrl}/patients/`,
-            headers: {
-              "Content-Type": "application/json",
-            },
-            data: patient,
-          }
-        : {
-            method: "post",
-            maxBodyLength: Infinity,
-            url: `${apiUrl}/patients/`,
-            headers: {
-              "Content-Type": "application/json",
-            },
-            data: patient,
-          };
-      axios
-        .request(submitConfig)
+      // Using apiClient ensures withCredentials: true for session cookies
+      const request = selectedPatient
+        ? apiClient.put('/patients/', patient)
+        : apiClient.post('/patients/', patient);
+
+      request
         .then((response) => {
           if (!response.data.success) {
             throw response.data.message || "Error";
@@ -328,17 +301,9 @@ const Patients = () => {
     [selectedPatient]
   );
   const accept = () => {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-    let deleteConfig = {
-      method: "delete",
-      maxBodyLength: Infinity,
-      url: `${apiUrl}/patients/${selectedPatient._id}`,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-    axios
-      .request(deleteConfig)
+    // Using apiClient ensures withCredentials: true for session cookies
+    apiClient
+      .delete(`/patients/${selectedPatient._id}`)
       .then((response) => {
         setMessage("Patient deleted successfully");
         fetchData();

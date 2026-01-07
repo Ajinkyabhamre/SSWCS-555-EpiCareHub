@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BrainWebGLViewer from "./BrainWebGLViewer";
+import { apiClient } from "../utils/api";
 
 const Brain = () => {
   const { patientId, uploadId } = useParams();
@@ -37,14 +37,13 @@ const Brain = () => {
 
       try {
         setLoading(true);
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-        // Fetch patient data
-        const patientResponse = await axios.get(`${apiUrl}/patients/${patientId}`);
+        // Fetch patient data (uses apiClient with proper baseURL and credentials)
+        const patientResponse = await apiClient.get(`/patients/${patientId}`);
         setPatient(patientResponse.data);
 
         // Fetch studies to find the matching one
-        const studiesResponse = await axios.get(`${apiUrl}/patients/${patientId}/studies`);
+        const studiesResponse = await apiClient.get(`/patients/${patientId}/studies`);
         if (studiesResponse.data.success && studiesResponse.data.studies) {
           const matchingStudy = studiesResponse.data.studies.find(
             (s) => s.uploadId === uploadId

@@ -1,5 +1,16 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://epicarehub-backend-production.up.railway.app/:path*"
+    },
+    {
+      "source": "/brain/:path*",
+      "destination": "https://epicarehub-brain-api-production.up.railway.app/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
   ]
 }
